@@ -8,7 +8,7 @@
  *                /config/www/evcc-card/locales/en.json
  */
 
-const EVCC_CARD_VERSION = "0.4.1";
+const EVCC_CARD_VERSION = "0.4.3";
 
 const FEATURES = [
   { suffix: "mode",                domain: "select",        type: "mode",          lp: true  },
@@ -215,6 +215,9 @@ class EvccCard extends HTMLElement {
     this._lastRenderKey = null;
     this._planState     = {};
     this._tabState      = {};
+    this._statsPeriod   = "total";
+    this._chartCache     = {};
+    this._chartCacheTime = {};
     this._translations  = {};
     this._translationsReady = false;
 
@@ -1464,67 +1467,172 @@ class EvccCard extends HTMLElement {
       </div>`;
   }
 
-  _getStatEntityIds() {
-    const p = (this._config.prefix || "evcc_") + "stat_";
-    const find = s => {
-      const id = `sensor.${p}${s}`;
-      return this._hass?.states[id] ? id : null;
+  _getStatEntityIds(period) {
+    const per    = period ?? this._statsPeriod ?? "total";
+    const base   = `sensor.${this._config.prefix || "evcc_"}`;
+    const find   = id => this._hass?.states[id] ? id : null;
+    const sufMap = {
+      total:    { kwh: "stat_total_charged_kwh",    solar: "stat_total_solar_percentage",    price: "stat_total_avg_price"    },
+      "30d":    { kwh: "stat30_charged_kwh",         solar: "stat30_solar_percentage",         price: "stat30_avg_price"         },
+      "365d":   { kwh: "stat365_charged_kwh",        solar: "stat365_solar_percentage",        price: "stat365_avg_price"        },
+      thisYear: { kwh: "stat_this_year_charged_kwh", solar: "stat_this_year_solar_percentage", price: "stat_this_year_avg_price" },
     };
+    const s = sufMap[per] ?? sufMap.total;
     return {
-      kwhId:   find("total_charged_kwh"),
-      solarId: find("total_solar_percentage"),
-      priceId: find("total_avg_price"),
+      kwhId:   find(`${base}${s.kwh}`),
+      solarId: find(`${base}${s.solar}`),
+      priceId: find(`${base}${s.price}`),
     };
+  }
+
+  _renderStatsPeriodTabs(size = "normal") {
+    const cur  = this._statsPeriod ?? "total";
+    const defs = [
+      { key: "30d",      tKey: "statsPeriod30d"      },
+      { key: "365d",     tKey: "statsPeriod365d"     },
+      { key: "thisYear", tKey: "statsPeriodThisYear" },
+      { key: "total",    tKey: "statsPeriodTotal"    },
+    ];
+    const btns = defs.map(d =>
+      `<button class="stats-period-tab${d.key === cur ? " active" : ""}" data-period="${d.key}">${this._t(d.tKey)}</button>`
+    ).join("");
+    return `<div class="stats-period-tabs${size === "small" ? " stats-period-tabs--small" : ""}">${btns}</div>`;
   }
 
   _maybeRefreshStats() {
-    const age = Date.now() - (this._statsHistoryFetched ?? 0);
+    const period = this._statsPeriod ?? "total";
+    const age = Date.now() - (this._chartCacheTime[period] ?? 0);
     if (age > 5 * 60 * 1000) {
-      this._statsHistoryFetched = Date.now();
-      this._fetchStatsHistory();
+      this._chartCacheTime[period] = Date.now();
+      this._fetchChartData(period);
     }
   }
 
-  async _fetchStatsHistory() {
-    const { kwhId } = this._getStatEntityIds();
+  async _fetchChartData(period) {
+    const { kwhId } = this._getStatEntityIds("total"); // always use cumulative total entities
     if (!kwhId) return;
-    const start = new Date();
-    start.setDate(start.getDate() - 15); // extra day for baseline
-    start.setHours(0, 0, 0, 0);
+
+    const now   = new Date();
+    let startTime, recorderPeriod;
+
+    if (period === "30d") {
+      startTime = new Date(now);
+      startTime.setDate(startTime.getDate() - 31);
+      startTime.setHours(0, 0, 0, 0);
+      recorderPeriod = "day";
+    } else if (period === "365d") {
+      startTime = new Date(now.getFullYear(), now.getMonth() - 14, 1);
+      recorderPeriod = "month";
+    } else if (period === "thisYear") {
+      startTime = new Date(now.getFullYear(), 0, 1);
+      recorderPeriod = "month";
+    } else { // total
+      startTime = new Date(2010, 0, 1);
+      recorderPeriod = "month";
+    }
+
     try {
       const result = await this._hass.callWS({
         type: "recorder/statistics_during_period",
-        start_time: start.toISOString(),
+        start_time: startTime.toISOString(),
         statistic_ids: [kwhId],
-        period: "day",
+        period: recorderPeriod,
         types: ["sum"],
       });
       const stats = result[kwhId] ?? [];
-      this._statsHistory = this._computeDeltasFromStats(stats, 14);
+
+      if      (period === "30d")      this._chartCache[period] = this._computeDailyDeltas(stats, 30);
+      else if (period === "365d")     this._chartCache[period] = this._computeMonthlyDeltas(stats, 13);
+      else if (period === "thisYear") this._chartCache[period] = this._computeThisYearMonthly(stats);
+      else {
+        const yearly = this._computeYearlyTotals(stats);
+        this._chartCache[period] = yearly.length <= 1
+          ? this._computeThisYearMonthly(stats)  // only one year of data → show months
+          : yearly;
+      }
+
       this._render();
     } catch(e) {
-      console.warn("[evcc-card] stats error", e);
+      console.warn("[evcc-card] chart error", e);
     }
   }
 
-  _computeDeltasFromStats(stats, days) {
-    const result = [];
+  _computeDailyDeltas(stats, days) {
+    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
     const now = new Date();
     const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`; };
     const byKey = {};
     stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
+    const result = [];
     for (let i = days - 1; i >= 0; i--) {
       const day = new Date(now);
       day.setDate(day.getDate() - i);
       day.setHours(0, 0, 0, 0);
       const prevDay = new Date(day);
       prevDay.setDate(prevDay.getDate() - 1);
-      const cur  = byKey[toKey(day)];
-      const prev = byKey[toKey(prevDay)];
+      const cur   = byKey[toKey(day)];
+      const prev  = byKey[toKey(prevDay)];
       const delta = (cur != null && prev != null) ? Math.max(0, cur - prev) : null;
-      result.push({ delta, label: new Date(day) });
+      const labelStr = day.toLocaleDateString(lang, { day: "numeric", month: "numeric" });
+      result.push({ delta, label: day, labelStr, isCurrent: i === 0 });
     }
     return result;
+  }
+
+  _computeMonthlyDeltas(stats, count) {
+    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
+    const now = new Date();
+    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}`; };
+    const byKey = {};
+    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
+    const result = [];
+    for (let i = count - 1; i >= 0; i--) {
+      const month     = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const prevMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
+      const cur   = byKey[toKey(month)];
+      const prev  = byKey[toKey(prevMonth)];
+      const delta = (cur != null && prev != null) ? Math.max(0, cur - prev) : null;
+      const labelStr = month.toLocaleDateString(lang, { month: "short" });
+      result.push({ delta, label: month, labelStr, isCurrent: i === 0 });
+    }
+    return result;
+  }
+
+  _computeThisYearMonthly(stats) {
+    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
+    const now  = new Date();
+    const year = now.getFullYear();
+    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}`; };
+    const byKey = {};
+    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
+    const result = [];
+    for (let m = 0; m <= now.getMonth(); m++) {
+      const month     = new Date(year, m, 1);
+      const prevMonth = new Date(year, m - 1, 1);
+      const cur   = byKey[toKey(month)];
+      const prev  = byKey[toKey(prevMonth)];
+      const delta = (cur != null && prev != null) ? Math.max(0, cur - prev) : null;
+      const labelStr = month.toLocaleDateString(lang, { month: "short" });
+      result.push({ delta, label: month, labelStr, isCurrent: m === now.getMonth() });
+    }
+    return result;
+  }
+
+  _computeYearlyTotals(stats) {
+    const now = new Date();
+    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}`; };
+    const byKey = {};
+    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
+    const years = [...new Set(stats.map(s => new Date(s.start).getFullYear()))].sort();
+    return years.map(year => {
+      let yearTotal = 0, hasAny = false;
+      for (let m = 0; m <= 11; m++) {
+        const cur  = byKey[`${year}-${m}`];
+        const prev = byKey[m === 0 ? `${year - 1}-11` : `${year}-${m - 1}`];
+        if (cur != null && prev != null) { yearTotal += Math.max(0, cur - prev); hasAny = true; }
+      }
+      return { delta: hasAny ? yearTotal : null, label: new Date(year, 0, 1), labelStr: String(year), isCurrent: year === now.getFullYear() };
+    });
   }
 
   _renderBarChart(data) {
@@ -1532,35 +1640,42 @@ class EvccCard extends HTMLElement {
     const n = data.length, GAP = 2;
     const barW = Math.floor((W - (n - 1) * GAP) / n);
     const maxVal = Math.max(...data.map(d => d.delta ?? 0), 0.1);
-    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
 
     const bars = data.map((d, i) => {
-      const x = i * (barW + GAP);
-      const isToday = i === n - 1;
-      let h = 0, y = VALUE_H + BAR_H;
+      const x         = i * (barW + GAP);
+      const cx        = x + barW / 2;
+      const isCurrent = d.isCurrent ?? (i === n - 1);
+      const opacity   = isCurrent ? "0.75" : "0.35";
+      let totalH = 0, topY = VALUE_H + BAR_H;
       if (d.delta !== null && d.delta > 0) {
-        h = Math.max(2, Math.round((d.delta / maxVal) * BAR_H));
-        y = VALUE_H + BAR_H - h;
+        totalH = Math.max(2, Math.round((d.delta / maxVal) * BAR_H));
+        topY   = VALUE_H + BAR_H - totalH;
       }
-      const dateStr = d.label.toLocaleDateString(lang, { day: "numeric", month: "numeric" });
+
       const valLabel = (d.delta !== null && d.delta > 0)
-        ? `<text transform="translate(${x + barW / 2}, ${y - 2}) rotate(-45)"
+        ? `<text transform="translate(${cx}, ${topY - 2}) rotate(-45)"
                 text-anchor="start" font-size="6.5" fill="var(--secondary-text-color,#888)"
-                opacity="${isToday ? "1" : "0.75"}">${d.delta.toFixed(2)}</text>`
+                opacity="${isCurrent ? "1" : "0.75"}">${d.delta.toFixed(1)}</text>`
         : "";
-      return `${valLabel}
-              <rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h,1)}"
-                    fill="var(--primary-color,#3b82f6)" opacity="${isToday ? "1" : "0.45"}" rx="1.5"/>
-              <text transform="translate(${x + barW / 2}, ${VALUE_H + BAR_H + 4}) rotate(90)"
-                    text-anchor="start" font-size="7" fill="var(--secondary-text-color,#888)"
-                    opacity="${isToday ? "1" : "0.75"}">${dateStr}</text>`;
+
+      const barRect = totalH > 0
+        ? `<rect x="${x}" y="${topY}" width="${barW}" height="${totalH}"
+                 fill="var(--primary-color,#3b82f6)" opacity="${opacity}" rx="1.5"/>`
+        : "";
+
+      const labelText = `<text transform="translate(${cx}, ${VALUE_H + BAR_H + 4}) rotate(90)"
+                               text-anchor="start" font-size="7" fill="var(--secondary-text-color,#888)"
+                               opacity="${isCurrent ? "1" : "0.75"}">${d.labelStr}</text>`;
+
+      return `${valLabel}${barRect}${labelText}`;
     }).join("");
 
     return `<svg viewBox="0 0 ${W} ${TOTAL_H}" style="width:100%;display:block">${bars}</svg>`;
   }
 
   _renderStatsFooter() {
-    const { kwhId, solarId, priceId } = this._getStatEntityIds();
+    const period = this._config.stats_period ?? "total";
+    const { kwhId, solarId, priceId } = this._getStatEntityIds(period);
     if (!kwhId && !solarId && !priceId) return "";
 
     const val = id => id ? (parseFloat(stateVal(this._hass, id)) || 0) : null;
@@ -1569,9 +1684,9 @@ class EvccCard extends HTMLElement {
     const price = val(priceId);
 
     const items = [
-      kwhId   ? `<span class="sf-item"><span class="sf-val">${Math.round(kwh)} kWh</span><span class="sf-lbl">${this._t("statsTotalCharged") || "Geladen"}</span></span>` : "",
-      solarId ? `<span class="sf-item"><span class="sf-val" style="color:var(--evcc-green)">${Math.round(solar)} %</span><span class="sf-lbl">${this._t("statsSolarShare") || "Solar"}</span></span>` : "",
-      priceId ? `<span class="sf-item"><span class="sf-val">${(price * 100).toFixed(1)} ct</span><span class="sf-lbl">${this._t("statsAvgPrice") || "Ø ct/kWh"}</span></span>` : "",
+      kwhId   ? `<span class="sf-item"><span class="sf-val">${Math.round(kwh)} kWh</span><span class="sf-lbl">${this._t("statsTotalCharged")}</span></span>` : "",
+      solarId ? `<span class="sf-item"><span class="sf-val" style="color:var(--evcc-green)">${Math.round(solar)} %</span><span class="sf-lbl">${this._t("statsSolarShare")}</span></span>` : "",
+      priceId ? `<span class="sf-item"><span class="sf-val">${(price * 100).toFixed(1)} ct</span><span class="sf-lbl">${this._t("statsAvgPrice")}</span></span>` : "",
     ].filter(Boolean);
 
     if (items.length === 0) return "";
@@ -1599,19 +1714,29 @@ class EvccCard extends HTMLElement {
       kpi(price, this._t("statsAvgPrice")     || "Ø Preis/kWh",    v => `${(v * 100).toFixed(1)} ct`, null),
     ].join("");
 
-    const chart = kwhId ? `
+    const { kwhId: chartKwhId } = this._getStatEntityIds("total");
+    const period     = this._statsPeriod ?? "total";
+    const chartData  = this._chartCache[period];
+    const chartTitle = this._t({ "30d": "statsPeriod30d", "365d": "statsPeriod365d", "thisYear": "statsPeriodThisYear", "total": "statsPeriodTotal" }[period]);
+    const chart = chartKwhId ? `
       <div class="stats-chart-section">
-        <div class="stats-chart-title">${this._t("statsLast14Days") || "Letzte 14 Tage"}</div>
-        ${this._statsHistory
-          ? this._renderBarChart(this._statsHistory)
+        <div class="stats-chart-title">${chartTitle}</div>
+        ${chartData
+          ? this._renderBarChart(chartData)
           : '<div class="stats-chart-loading">…</div>'}
       </div>` : "";
+
+    const noDataHint = (!kwhId && !solarId && !priceId && this._statsPeriod !== "total")
+      ? `<div class="stats-no-data">${this._t("statsNoData")}</div>`
+      : "";
 
     return `
       <div>
         <div class="lp-header">
           <span class="lp-name">${this._t("statistics")}</span>
         </div>
+        ${this._renderStatsPeriodTabs()}
+        ${noDataHint}
         <div class="stats-kpi-row">${kpis}</div>
         ${chart}
       </div>`;
@@ -1790,6 +1915,13 @@ class EvccCard extends HTMLElement {
           b.classList.toggle("active", i === tabIdx));
         block.querySelectorAll(".compact-panel").forEach((p, i) =>
           i === tabIdx ? p.removeAttribute("hidden") : p.setAttribute("hidden", ""));
+      });
+    });
+
+    this.shadowRoot.querySelectorAll("button.stats-period-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this._statsPeriod = btn.dataset.period;
+        this._render();
       });
     });
 
@@ -2280,6 +2412,22 @@ class EvccCard extends HTMLElement {
       .s2-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
       .s2-chip-sub { font-size: .62rem; color: var(--secondary-text-color); font-weight: 400; }
 
+      .stats-period-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+      .stats-period-tab {
+        padding: 2px 10px; border-radius: 999px;
+        border: 1px solid var(--divider-color, #e5e7eb);
+        background: transparent; color: var(--secondary-text-color);
+        cursor: pointer; font-size: .72rem; font-weight: 600; transition: all .15s;
+      }
+      .stats-period-tab.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+      .stats-period-tabs--small .stats-period-tab { font-size: .65rem; padding: 1px 8px; }
+
+      .stats-footer-wrap {
+        border-top: 1px solid var(--divider-color, #333);
+        margin-top: 12px; padding-top: 8px;
+      }
+      .stats-footer-wrap .stats-footer { border-top: none; margin-top: 6px; padding-top: 0; }
+
       .stats-footer {
         display: flex; align-items: center;
         border-top: 1px solid var(--divider-color, #333);
@@ -2289,6 +2437,13 @@ class EvccCard extends HTMLElement {
       .sf-val  { font-size: .82rem; font-weight: 700; }
       .sf-lbl  { font-size: .58rem; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
       .sf-sep  { width: 1px; height: 28px; background: var(--divider-color, #333); flex-shrink: 0; }
+
+      .stats-no-data {
+        font-size: .76rem; color: var(--secondary-text-color);
+        background: var(--secondary-background-color, rgba(255,255,255,.04));
+        border: 1px solid var(--divider-color, #333);
+        border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; line-height: 1.4;
+      }
 
       .stats-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
       .stats-kpi {

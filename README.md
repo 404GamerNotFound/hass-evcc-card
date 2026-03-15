@@ -8,24 +8,28 @@ All charge points and site entities are **automatically discovered** based on th
 
 ---
 
-## Features
+## Modes
+
+| Mode | Description |
+|---|---|
+| ⚡ [`loadpoint`](#loadpoint-default) | Main charge point view — mode buttons, SoC bar, session, sliders, phase switch, charge plan |
+| ☀️ [`site`](#site) | Full site energy overview — PV bar, individual strings, live In/Out table with battery & charge point details |
+| 🔌 [`grid`](#grid) | Compact grid focus — large net value with color coding, solar share badge, source and consumer chips |
+| 📈 [`stats`](#stats) | Charging statistics — KPIs with period selector (30d / 365d / this year / total) and solar trend bar chart |
+| 🏠 [`battery`](#battery) | Home battery block — SoC indicator, buffer & priority sliders, discharge lock |
+| 📑 [`compact`](#compact) | Tab layout of `loadpoint` — Control / Settings / Plan / Session, ideal for space-constrained dashboards |
+| 📋 [`plan`](#plan) | Minimalist charge plan only — vehicle selector, target time & SoC, activate / delete |
+
+## General Features
 
 | Feature | Description |
 |---|---|
-| ☀️ **Site overview** | PV power bar split across home/charging/battery/feed-in, individual PV strings, live In/Out table |
-| ⚡ **Compact site overview** | Net grid value with color coding, solar share badge, source and consumer chips (`grid` mode) |
-| ⚡ **Charge mode control** | Switch between `Off`, `PV`, `Min+PV` and `Now` with a single tap |
-| 🏠 **Home battery block** | Buffer SoC, priority SoC and discharge lock with inline sliders |
-| 📑 **Compact mode** | Tab-based layout grouping controls, settings, plan and session — ideal for space-constrained dashboards |
-| 📋 **Plan mode** | Minimalist mode showing only the charge plan — ideal for dedicated dashboard pages |
-| 📅 **Charge planning** | Select vehicle, set target time & SoC, activate and delete plans |
-| 📊 **Session overview** | Energy, cost, duration and phases of the current charging session |
 | 🔍 **Auto-discovery** | Automatically detects all charge points and site entities — zero manual configuration |
+| 🔄 **Live updates** | Power, SoC and status update in real time without full re-render |
 | 🔋 **SoC display** | Vehicle state of charge as a progress bar with percentage and estimated range |
 | 🎚️ **Slider controls** | Adjust Target SoC, Min SoC, Priority, Max current and Min current inline |
 | 🔌 **Phase switching** | Auto / 1-phase / 3-phase control built in |
 | 🌍 **Multi-language** | Support for various languages — auto-detected from HA language setting, easily extensible |
-| 🔄 **Live updates** | Power, SoC and status update in real time without full re-render |
 | 🎛️ **Filtering** | Select specific charge points via `loadpoints` config |
 
 ---
@@ -109,6 +113,7 @@ Add the card to any Lovelace dashboard using the YAML editor. The `mode` option 
 | `site_details` | `string` | *(expanded)* | Set to `collapsed` to hide the IN/OUT detail table by default in `site` mode |
 | `charge_current_settings` | `string` | *(collapsed)* | Set to `expanded` to show the charge current block (phase switch, min/max current) expanded by default |
 | `prefix` | `string` | `evcc_` | Entity name prefix used by the integration — only needed if you run multiple EVCC instances with a custom prefix (e.g. `evcc2_`) |
+| `stats_period` | `string` | `total` | Statistics period shown in the footer of `site` and `grid` cards. Allowed values: `total`, `30d`, `365d`, `thisYear`. The `stats` card always shows an interactive tab selector regardless of this option. |
 
 ---
 
@@ -139,6 +144,12 @@ loadpoints:
 ```yaml
 type: custom:evcc-card
 charge_current_settings: expanded   # show charge current block expanded by default
+```
+
+```yaml
+type: custom:evcc-card
+no_plan:
+  - wallbox-garage   # hide the charge plan block for this charge point
 ```
 
 ![Loadpoint block](images/chargepoint.png)
@@ -194,13 +205,27 @@ mode: grid
 
 ### `stats`
 
-Lifetime charging statistics with a 14-day bar chart:
+Charging statistics with period selector and a matching bar chart:
 
-- Three KPIs: total charged energy (kWh), solar share (%), average price (ct/kWh)
-- 14-day bar chart showing daily charged energy — fetched once from the HA Recorder and cached for 5 minutes
-- The same three KPIs also appear as a compact footer row at the bottom of `site` and `site2` cards whenever the `evcc_stat_*` entities are present
+- **Period tabs:** 30 days · 365 days · This year · Total — switch with a single tap; the selection is remembered for the session
+- Three KPIs per period: charged energy (kWh), solar share (%), average price (ct/kWh)
+- The bar chart adapts to the selected period:
 
-The stat entities are auto-discovered using the pattern `sensor.{prefix}stat_total_*` (e.g. `sensor.evcc_stat_total_charged_kwh`).
+| Tab | Chart | Bars |
+|---|---|---|
+| **30 days** | Daily values | 30 bars (day.month labels) |
+| **365 days** | Rolling monthly | 13 bars (3-letter month labels) |
+| **This year** | Monthly, current calendar year | Jan – current month |
+| **Total** | One bar per year | All available years |
+
+- Chart data is fetched lazily per tab on first access and cached for 5 minutes
+- The same three KPIs also appear as a compact footer row at the bottom of `site` and `grid` cards — the period shown there is controlled via the `stats_period` config option (default: `total`)
+
+The stat entities are auto-discovered using the pattern `sensor.{prefix}stat_*` (e.g. `sensor.evcc_stat_total_charged_kwh`). The bar chart always uses the cumulative `sensor.{prefix}stat_total_charged_kwh` entity from the HA Recorder, independent of which KPI period is selected.
+
+> **ℹ️ Note:** The **Total** period is enabled by default in ha-evcc. The periods **30 days**, **365 days** and **This year** must be **manually enabled** in the ha-evcc integration settings (Settings → Devices & Services → ha-evcc → Configure). If a period is not yet activated, the card shows a hint with instructions directly inside the card.
+
+> **ℹ️ Single-year fallback:** If the **Total** tab detects that only one calendar year of data is available in the HA Recorder, it automatically falls back to showing the monthly breakdown of the current year — identical to the **This year** chart.
 
 ```yaml
 type: custom:evcc-card
