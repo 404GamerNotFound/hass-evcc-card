@@ -110,8 +110,7 @@ All charge points and site entities are **automatically discovered** based on th
 ## Prerequisites
 
 - [Home Assistant](https://www.home-assistant.io/) (2023.x or newer)
-- [ha-evcc integration](https://github.com/marq24/ha-evcc) installed and configured
-- A running [EVCC](https://evcc.io/) instance connected to Home Assistant
+- [ha-evcc](https://github.com/marq24/ha-evcc) integration installed and configured, with a running [EVCC](https://evcc.io/) instance connected to it
 
 ---
 
