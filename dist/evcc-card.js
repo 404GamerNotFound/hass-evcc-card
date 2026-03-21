@@ -411,13 +411,7 @@ class EvccCard extends HTMLElement {
   }
 
   _tInline(key) {
-    const lang = (this._config.language
-      || (this._hass?.language ?? "de")).split("-")[0].toLowerCase();
-    const map = {
-      siteCollapse: { de: "Einklappen", en: "Collapse" },
-      siteExpand:   { de: "Ausklappen", en: "Expand" },
-    };
-    return (map[key]?.[lang]) ?? (map[key]?.["en"]) ?? key;
+    return this._t(key);
   }
 
   _t(key, replacements = {}) {
