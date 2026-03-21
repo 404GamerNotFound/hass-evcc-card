@@ -897,15 +897,20 @@ class EvccCard extends HTMLElement {
     if (!ents.effective_plan_soc || !this._hass.states[ents.effective_plan_soc]) return "";
     if (!force && !hasVehicle && !planActive) return "";
 
+    const vehicleEntityId    = ents.vehicle_name || null;
+    const vehicleAttrs       = vehicleEntityId ? (this._hass.states[vehicleEntityId]?.attributes ?? {}) : {};
+    const allOptions         = (vehicleAttrs.options ?? []).filter(o => o !== "null");
+    const vehicleAttr        = vehicleAttrs.vehicle ?? null;
+
     if (!this._planState[lpName]) {
-      const limitSoc = ents.effective_limit_soc
+      const vehicleLimitSoc  = vehicleAttr?.limitSoc > 0 ? vehicleAttr.limitSoc : null;
+      const entityLimitSoc   = ents.effective_limit_soc
         ? Math.round(parseFloat(stateVal(this._hass, ents.effective_limit_soc))) : null;
-      
-      const initSoc = (planSoc && planSoc !== "unknown" && planSoc !== "unavailable")
-        ? Math.round(parseFloat(planSoc))
-        : (limitSoc && limitSoc > 0)
-          ? limitSoc
-          : 80;
+
+      const parsedPlanSoc = parseFloat(planSoc);
+      const initSoc = (parsedPlanSoc > 0)
+        ? Math.round(parsedPlanSoc)
+        : vehicleLimitSoc ?? (entityLimitSoc > 0 ? entityLimitSoc : 80);
       let initDt = "";
       if (planTime && planTime !== "unknown" && planTime !== "unavailable") {
         try {
@@ -926,11 +931,6 @@ class EvccCard extends HTMLElement {
 
     const defaultSoc     = this._planState[lpName].soc;
     const defaultDt      = this._planState[lpName].time;
-
-    const vehicleEntityId    = ents.vehicle_name || null;
-    const vehicleAttrs       = vehicleEntityId ? (this._hass.states[vehicleEntityId]?.attributes ?? {}) : {};
-    const allOptions         = (vehicleAttrs.options ?? []).filter(o => o !== "null");
-    const vehicleAttr        = vehicleAttrs.vehicle ?? null;
 
     const dbIdToName = {};
     allOptions.forEach(id => {
@@ -2361,8 +2361,6 @@ class EvccCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("select.plan-vehicle-select").forEach(sel => {
       sel.addEventListener("focus", () => {
         this._pendingRender = false;
-        const eid = sel.dataset.entity;
-        if (eid) console.info("[evcc-card] vehicle_name entity attrs:", this._hass.states[eid]?.attributes);
       });
       sel.addEventListener("blur", () => {
         this._isDragging = false;
@@ -2370,7 +2368,11 @@ class EvccCard extends HTMLElement {
       });
       sel.addEventListener("change", () => {
         const lpName = sel.dataset.lp;
-        if (this._planState[lpName]) this._planState[lpName].vehicle = sel.value;
+        const eid    = sel.dataset.entity;
+        if (eid && this._hass) {
+          this._hass.callService("select", "select_option", { entity_id: eid, option: sel.value });
+          window.dispatchEvent(new CustomEvent("evcc-plan-reset", { detail: { lpName } }));
+        }
       });
     });
 
