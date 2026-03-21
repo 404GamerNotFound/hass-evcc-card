@@ -8,7 +8,7 @@
  *                /config/www/evcc-card/locales/en.json
  */
 
-const EVCC_CARD_VERSION = "0.4.5";
+const EVCC_CARD_VERSION = "0.5.1";
 
 const FEATURES = [
   { suffix: "mode",                domain: "select",        type: "mode",          lp: true  },
@@ -459,37 +459,45 @@ class EvccCard extends HTMLElement {
         )
       : loadpoints;
 
-    this.shadowRoot.innerHTML = `
-      <style>${this._styles()}</style>
-      <ha-card>
-        <div class="card-content">
-        ${this._config.mode === "battery"
-            ? this._renderBatteryBlock(site)
-            : this._config.mode === "site"
-              ? this._renderSiteBlock(site, loadpoints)
-              : this._config.mode === "flow"
-              ? this._renderFlowBlock(site, loadpoints)
-              : (this._config.mode === "grid" || this._config.mode === "site2")
-              ? this._renderSiteBlock2(site, loadpoints)
-              : this._config.mode === "stats"
-              ? this._renderStatsBlock()
-              : this._config.mode === "plan"
-                ? this._renderPlanMode(visible)
-                : this._config.mode === "compact"
-                  ? (Object.keys(visible).length === 0
-                      ? this._renderEmpty(loadpoints)
-                      : Object.entries(visible)
-                          .map(([lp, ents]) => this._renderCompactLoadpoint(lp, ents))
-                          .join(""))
-                  : Object.keys(visible).length === 0
-              ? this._renderEmpty(loadpoints)
-              : Object.entries(visible)
-                  .map(([lp, ents]) => this._renderLoadpoint(lp, ents))
-                  .join("")
-          }
-        </div>
-      </ha-card>
-    `;
+    // Inject static styles once — avoids regenerating ~400 lines of CSS on every render
+    if (!this.shadowRoot.querySelector("style.evcc-main-styles")) {
+      const styleEl = document.createElement("style");
+      styleEl.className = "evcc-main-styles";
+      styleEl.textContent = this._styles();
+      this.shadowRoot.prepend(styleEl);
+    }
+
+    const contentHtml = this._config.mode === "battery"
+      ? this._renderBatteryBlock(site)
+      : this._config.mode === "site"
+        ? this._renderSiteBlock(site, loadpoints)
+        : this._config.mode === "flow"
+        ? this._renderFlowBlock(site, loadpoints)
+        : (this._config.mode === "grid" || this._config.mode === "site2")
+        ? this._renderSiteBlock2(site, loadpoints)
+        : this._config.mode === "stats"
+        ? this._renderStatsBlock()
+        : this._config.mode === "plan"
+          ? this._renderPlanMode(visible)
+          : this._config.mode === "compact"
+            ? (Object.keys(visible).length === 0
+                ? this._renderEmpty(loadpoints)
+                : Object.entries(visible)
+                    .map(([lp, ents]) => this._renderCompactLoadpoint(lp, ents))
+                    .join(""))
+            : Object.keys(visible).length === 0
+        ? this._renderEmpty(loadpoints)
+        : Object.entries(visible)
+            .map(([lp, ents]) => this._renderLoadpoint(lp, ents))
+            .join("");
+
+    let card = this.shadowRoot.querySelector("ha-card");
+    if (!card) {
+      card = document.createElement("ha-card");
+      this.shadowRoot.appendChild(card);
+    }
+    card.innerHTML = `<div class="card-content">${contentHtml}</div>`;
+
     this._attachListeners();
   }
 
