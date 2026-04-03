@@ -8,7 +8,7 @@
  *                /config/www/evcc-card/locales/en.json
  */
 
-const EVCC_CARD_VERSION = "0.5.3";
+const EVCC_CARD_VERSION = "0.5.3-1";
 
 const FEATURES = [
   { suffix: "mode",                domain: "select",        type: "mode",          lp: true  },
@@ -16,7 +16,6 @@ const FEATURES = [
   { suffix: "max_current",         domain: "select",        type: "select_slider", lp: true  },
   { suffix: "min_soc",             domain: "select",        type: "select_slider", lp: true  },
   { suffix: "limit_soc",           domain: "number",        type: "slider",        lp: true  },
-  { suffix: "limit_soc",           domain: "select",        type: "select_slider", lp: true  },
   { suffix: "limit_energy",        domain: "number",        type: "slider",        lp: true  },
   { suffix: "smart_cost_limit",    domain: "number",        type: "slider",        lp: true  },
   { suffix: "priority",            domain: "number",        type: "slider",        lp: true  },
@@ -45,43 +44,29 @@ const FEATURES = [
   { suffix: "effective_plan_time",     domain: "sensor", type: "info", lp: true },
   { suffix: "plan_projected_start",    domain: "sensor", type: "info", lp: true },
   { suffix: "plan_projected_end",      domain: "sensor", type: "info", lp: true },
-  { suffix: "vehicle_plans_soc",       domain: "sensor", type: "info", lp: true },
-  { suffix: "vehicle_plans_time",      domain: "sensor", type: "info", lp: true },
 
   { suffix: "charging",            domain: "binary_sensor", type: "status_bool",   lp: true  },
   { suffix: "connected",           domain: "binary_sensor", type: "status_bool",   lp: true  },
   { suffix: "enabled",             domain: "binary_sensor", type: "status_bool",   lp: true  },
   { suffix: "smart_cost_active",   domain: "binary_sensor", type: "status_bool",   lp: true  },
   { suffix: "plan_active",         domain: "binary_sensor", type: "status_bool",   lp: true  },
+  { suffix: "charger_feature_heating", domain: "binary_sensor", type: "status_bool", lp: true },
+  { suffix: "charger_status_reason",   domain: "sensor",        type: "info",         lp: true },
 
   { suffix: "grid_power",          domain: "sensor",        type: "power",         lp: false },
   { suffix: "pv_power",            domain: "sensor",        type: "power",         lp: false },
-  { suffix: "pv_0_power",          domain: "sensor",        type: "power",         lp: false },
-  { suffix: "pv_1_power",          domain: "sensor",        type: "power",         lp: false },
-  { suffix: "pv_2_power",          domain: "sensor",        type: "power",         lp: false },
-  { suffix: "pv_3_power",          domain: "sensor",        type: "power",         lp: false },
+  // pv_N_power / pv_N_energy: dynamisch erkannt in discoverEntities()
   { suffix: "home_power",          domain: "sensor",        type: "power",         lp: false },
   { suffix: "battery_power",        domain: "sensor",        type: "power",         lp: false },
-  { suffix: "battery_0_power",     domain: "sensor",        type: "power",         lp: false },
-  { suffix: "battery_1_power",     domain: "sensor",        type: "power",         lp: false },
-  { suffix: "battery_2_power",     domain: "sensor",        type: "power",         lp: false },
-  { suffix: "battery_3_power",     domain: "sensor",        type: "power",         lp: false },
+  // battery_N_power / battery_N_soc: dynamisch erkannt in discoverEntities()
   { suffix: "battery_soc",         domain: "sensor",        type: "soc",           lp: false },
-  { suffix: "battery_0_soc",       domain: "sensor",        type: "soc",           lp: false },
-  { suffix: "battery_1_soc",       domain: "sensor",        type: "soc",           lp: false },
-  { suffix: "battery_2_soc",       domain: "sensor",        type: "soc",           lp: false },
-  { suffix: "battery_3_soc",       domain: "sensor",        type: "soc",           lp: false },
+  // battery_N_soc: dynamisch erkannt in discoverEntities()
   { suffix: "battery_capacity",    domain: "sensor",        type: "info",          lp: false },
   { suffix: "pv_energy",           domain: "sensor",        type: "info",          lp: false },
-  { suffix: "pv_0_energy",         domain: "sensor",        type: "info",          lp: false },
-  { suffix: "pv_1_energy",         domain: "sensor",        type: "info",          lp: false },
-  { suffix: "pv_2_energy",         domain: "sensor",        type: "info",          lp: false },
-  { suffix: "pv_3_energy",         domain: "sensor",        type: "info",          lp: false },
+  // pv_N_energy: dynamisch erkannt in discoverEntities()
   { suffix: "grid_energy",         domain: "sensor",        type: "info",          lp: false },
-  { suffix: "grid_energy_export",  domain: "sensor",        type: "info",          lp: false },
   { suffix: "battery_energy_charge",   domain: "sensor",    type: "info",          lp: false },
   { suffix: "battery_energy_discharge",domain: "sensor",    type: "info",          lp: false },
-  { suffix: "home_energy",         domain: "sensor",        type: "info",          lp: false },
   { suffix: "tariff_grid",         domain: "sensor",        type: "info",          lp: false },
   { suffix: "tariff_feedin",       domain: "sensor",        type: "info",          lp: false },
   { suffix: "tariff_co2",          domain: "sensor",        type: "info",          lp: false },
@@ -94,6 +79,17 @@ const FEATURES = [
   { suffix: "battery_grid_charge_active", domain: "binary_sensor", type: "status_bool", lp: false },
   { suffix: "battery_grid_charge_limit",  domain: "number",        type: "slider",      lp: false },
 ];
+
+const _headerIcons = {
+  evStation:     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7.03 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14A2,2 0 0,0 15,12H14V5A2,2 0 0,0 12,3H6A2,2 0 0,0 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10M12,10H6V5H12V10Z"/></svg>`,
+  home:          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/></svg>`,
+  transfer:      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"/></svg>`,
+  grid:          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11,7.5L9.5,3H14.5L13,7.5H15L18,3H21L15,12H17L21,21H15L12,15L9,21H3L7,12H9L3,3H6L9,7.5H11M12,13.5L13.9,19H10.1L12,13.5Z"/></svg>`,
+  battery:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15.67,4H14V2H10V4H8.33C7.6,4 7,4.6 7,5.33V20.67C7,21.4 7.6,22 8.33,22H15.67C16.4,22 17,21.4 17,20.67V5.33C17,4.6 16.4,4 15.67,4M13,18H11V16H9L12,11V14H14L13,18Z"/></svg>`,
+  chartBar:      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>`,
+  calendarClock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11A5,5 0 0,0 11,16A5,5 0 0,0 16,21A5,5 0 0,0 21,16A5,5 0 0,0 16,11Z"/></svg>`,
+  fire:          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2Z"/></svg>`,
+};
 
 const CHARGE_MODES = {
   "off":   { icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13,3H11V13H13V3M17.83,5.17L16.41,6.59C17.99,7.86 19,9.81 19,12A7,7 0 0,1 12,19A7,7 0 0,1 5,12C5,9.81 6.01,7.86 7.58,6.58L6.17,5.17C4.23,6.82 3,9.26 3,12A9,9 0 0,0 12,21A9,9 0 0,0 21,12C21,9.26 19.77,6.82 17.83,5.17Z"/></svg>`,  tKey: "modeOff"  },
@@ -111,7 +107,7 @@ const _chevron = (up) =>
 async function detectPrefix(hass) {
   try {
     const entities = await hass.callWS({ type: "config/entity_registry/list" });
-    const evccEnts = entities.filter(e => e.platform === "evcc_intg");
+    const evccEnts = entities.filter(e => e.platform === "evcc");
     if (evccEnts.length === 0) return "evcc_";
 
     const siteSuffixes = FEATURES.filter(f => !f.lp);
@@ -184,6 +180,68 @@ function discoverEntities(hass, prefix = "evcc_") {
     if (!hasCore) delete loadpoints[lpName];
   }
 
+  // Dynamische Erkennung von Battery/PV-Device-Entities (title-basiert)
+  // Pattern: sensor.{prefix}battery_{slug}_{key} → site.battery_N_{key}
+  //          sensor.{prefix}pv_{slug}_{key}      → site.pv_N_{key}
+  const battDevices = {};  // slug → { power: entityId, soc: entityId, capacity: entityId }
+  const pvDevices = {};    // slug → { power: entityId, energy: entityId }
+  const battSuffixes = ["power", "soc", "capacity"];
+  const pvSuffixes = ["power", "energy"];
+
+  for (const entityId of Object.keys(hass.states)) {
+    const dotIdx = entityId.indexOf(".");
+    const domain = entityId.slice(0, dotIdx);
+    if (domain !== "sensor") continue;
+    const slug = entityId.slice(dotIdx + 1);
+    if (!slug.startsWith(prefix)) continue;
+    const rest = slug.slice(prefixLen);
+
+    // Battery device: battery_{slug}_{power|soc|capacity}
+    if (rest.startsWith("battery_")) {
+      const afterBattery = rest.slice(8); // after "battery_"
+      for (const suf of battSuffixes) {
+        if (afterBattery.endsWith("_" + suf)) {
+          const devSlug = afterBattery.slice(0, afterBattery.length - suf.length - 1);
+          if (devSlug) {
+            if (!battDevices[devSlug]) battDevices[devSlug] = {};
+            battDevices[devSlug][suf] = entityId;
+          }
+          break;
+        }
+      }
+    }
+
+    // PV device: pv_{slug}_{power|energy}
+    if (rest.startsWith("pv_")) {
+      const afterPv = rest.slice(3); // after "pv_"
+      for (const suf of pvSuffixes) {
+        if (afterPv.endsWith("_" + suf)) {
+          const devSlug = afterPv.slice(0, afterPv.length - suf.length - 1);
+          if (devSlug) {
+            if (!pvDevices[devSlug]) pvDevices[devSlug] = {};
+            pvDevices[devSlug][suf] = entityId;
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // Battery-Devices auf Index-Keys mappen (battery_0_power, battery_0_soc, ...)
+  const battSlugs = Object.keys(battDevices).filter(s => battDevices[s].power);
+  battSlugs.forEach((slug, i) => {
+    if (battDevices[slug].power)    site[`battery_${i}_power`]    = battDevices[slug].power;
+    if (battDevices[slug].soc)      site[`battery_${i}_soc`]      = battDevices[slug].soc;
+    if (battDevices[slug].capacity) site[`battery_${i}_capacity`] = battDevices[slug].capacity;
+  });
+
+  // PV-Devices auf Index-Keys mappen (pv_0_power, pv_0_energy, ...)
+  const pvSlugs = Object.keys(pvDevices).filter(s => pvDevices[s].power);
+  pvSlugs.forEach((slug, i) => {
+    if (pvDevices[slug].power)  site[`pv_${i}_power`]  = pvDevices[slug].power;
+    if (pvDevices[slug].energy) site[`pv_${i}_energy`] = pvDevices[slug].energy;
+  });
+
   return { loadpoints, site };
 }
 
@@ -207,6 +265,31 @@ function displayUnit(hass, entityId) {
 function isOn(hass, entityId) {
   const s = stateVal(hass, entityId);
   return s === "on" || s === "true";
+}
+
+/**
+ * Dynamisch Device-Sources aus site-Objekt erzeugen.
+ * Sucht nach Keys im Pattern {prefix}_{N}_{primarySuffix} und optional {prefix}_{N}_{secondarySuffix}.
+ * @param {object} site - Das site-Objekt mit Entity-IDs
+ * @param {string} prefix - "battery" oder "pv"
+ * @param {string} primarySuffix - "power"
+ * @param {string} [secondarySuffix] - "soc" oder "energy" (optional)
+ * @returns {Array<{key: string, socKey?: string, energyKey?: string, idx: number}>}
+ */
+function _discoverDeviceSources(site, prefix, primarySuffix, secondarySuffix) {
+  const sources = [];
+  for (let i = 0; i < 32; i++) {
+    const key = `${prefix}_${i}_${primarySuffix}`;
+    if (!site[key]) break;
+    const entry = { key, idx: i };
+    if (secondarySuffix) {
+      const secKey = `${prefix}_${i}_${secondarySuffix}`;
+      if (secondarySuffix === "soc") entry.socKey = secKey;
+      else if (secondarySuffix === "energy") entry.energyKey = secKey;
+    }
+    sources.push(entry);
+  }
+  return sources;
 }
 
 function socFillGradient(soc, minSoc, limitSoc) {
@@ -258,9 +341,19 @@ class EvccCard extends HTMLElement {
     this._lastRenderKey = null;
     this._planState     = {};
     this._tabState      = {};
-    this._statsPeriod   = "total";
-    this._chartCache     = {};
-    this._chartCacheTime = {};
+    this._priorityOrder = null; // null = nutze discovered order; string[] = lpNames in Prio-Reihenfolge
+    this._statsPeriod    = null;   // null = use config default
+    this._statsMetric    = "energy";  // "energy" | "price" | "co2"
+    this._statsFilter    = "total";   // "total" | "lp:{name}" | "v:{name}"
+    this._statsOffset    = 0;         // 0 = current period, 1 = one back, etc.
+    this._statsData      = null;      // {30d: {chargedKWh, solarPercentage, avgPrice, avgCo2}, ...}
+    this._sessionsList   = null;
+    this._statsChartCache = {};
+    this._statsLoadpoints = [];
+    this._statsVehicles   = [];
+    this._statsLpVehicles = [];
+    this._statsFetchTime  = 0;
+    this._evccUrl         = undefined; // undefined = not yet detected, null = detection failed
     this._translations  = {};
     this._translationsReady = false;
 
@@ -377,10 +470,6 @@ class EvccCard extends HTMLElement {
 
   setConfig(config) {
     this._config = config || {};
-    const validPeriods = ["30d", "365d", "thisYear", "total"];
-    if (validPeriods.includes(config?.stats_period)) {
-      this._statsPeriod = config.stats_period;
-    }
 
     if (!this._translationsReady && !this._loadingTranslations) {
       this._loadingTranslations = true;
@@ -462,17 +551,33 @@ class EvccCard extends HTMLElement {
       this._cachedEntityIdKey = evccIdKey;
       this._cachedEntities    = discoverEntities(this._hass, prefix);
     }
-    const { loadpoints, site } = this._cachedEntities;
+    const { loadpoints: allLoadpoints, site } = this._cachedEntities;
+
+    // Filter out site-level entities misidentified as loadpoints
+    const SITE_PREFIXES = /^(battery|grid|pv|home)(_|$)/;
+    const loadpoints = Object.fromEntries(
+      Object.entries(allLoadpoints).filter(([lp]) => !SITE_PREFIXES.test(lp))
+    );
 
     const filterRaw = this._config.loadpoints;
     const filter = filterRaw
       ? (Array.isArray(filterRaw) ? filterRaw : [filterRaw])
       : null;
-    const visible = filter && filter.length > 0
+    let visible = filter && filter.length > 0
       ? Object.fromEntries(
           Object.entries(loadpoints).filter(([lp]) => filter.includes(lp))
         )
       : loadpoints;
+
+    // Heating vs. Loadpoint separation: heating mode shows only heaters, loadpoint/compact hide heaters
+    const isHeater = (ents) => ents.charger_feature_heating && isOn(this._hass, ents.charger_feature_heating);
+    const mode = this._config.mode || "loadpoint";
+    if (mode === "heating") {
+      visible = Object.fromEntries(Object.entries(visible).filter(([, ents]) => isHeater(ents)));
+    } else if (["loadpoint", "compact"].includes(mode)) {
+      visible = Object.fromEntries(Object.entries(visible).filter(([, ents]) => !isHeater(ents)));
+    }
+    // "priority": kein Filter → alle loadpoints bleiben sichtbar
 
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
@@ -488,6 +593,8 @@ class EvccCard extends HTMLElement {
               ? this._renderSiteBlock2(site, loadpoints)
               : this._config.mode === "stats"
               ? this._renderStatsBlock()
+              : this._config.mode === "priority"
+              ? this._renderPriorityMode(visible)
               : this._config.mode === "plan"
                 ? this._renderPlanMode(visible)
                 : this._config.mode === "compact"
@@ -496,11 +603,17 @@ class EvccCard extends HTMLElement {
                       : Object.entries(visible)
                           .map(([lp, ents]) => this._renderCompactLoadpoint(lp, ents))
                           .join(""))
-                  : Object.keys(visible).length === 0
-              ? this._renderEmpty(loadpoints)
-              : Object.entries(visible)
-                  .map(([lp, ents]) => this._renderLoadpoint(lp, ents))
-                  .join("")
+                  : this._config.mode === "heating"
+                    ? (Object.keys(visible).length === 0
+                        ? this._renderEmpty(loadpoints)
+                        : Object.entries(visible)
+                            .map(([lp, ents]) => this._renderHeatingLoadpoint(lp, ents))
+                            .join(""))
+                    : Object.keys(visible).length === 0
+                ? this._renderEmpty(loadpoints)
+                : Object.entries(visible)
+                    .map(([lp, ents]) => this._renderLoadpoint(lp, ents))
+                    .join("")
           }
         </div>
       </ha-card></div>
@@ -535,13 +648,14 @@ class EvccCard extends HTMLElement {
     const connected  = ents.connected ? isOn(this._hass, ents.connected) : false;
     const statusLabel = charging ? this._t("charging") : connected ? this._t("connected") : this._t("ready");
     const statusClass = charging ? "charging" : connected ? "connected" : "ready";
+    const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
 
     const noPlan = Array.isArray(this._config.no_plan) && this._config.no_plan.includes(lpName);
 
     return `
       <div class="loadpoint">
         <div class="lp-header">
-          <span class="lp-name">${this._config.title || lpName}</span>
+          <span class="lp-name">${_headerIcons.evStation} ${this._config.title || lpTitle}</span>
           <span class="lp-badge ${statusClass}">
             ${statusLabel}
           </span>
@@ -563,7 +677,16 @@ class EvccCard extends HTMLElement {
     const connected   = ents.connected ? isOn(this._hass, ents.connected) : false;
     const statusLabel = charging ? this._t("charging") : connected ? this._t("connected") : this._t("ready");
     const statusClass = charging ? "charging" : connected ? "connected" : "ready";
+    const lpTitle     = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
     const noPlan      = Array.isArray(this._config.no_plan) && this._config.no_plan.includes(lpName);
+
+    const _reasonRaw = ents.charger_status_reason ? stateVal(this._hass, ents.charger_status_reason) : null;
+    const reasonRaw = (_reasonRaw && _reasonRaw !== "unknown" && _reasonRaw !== "unavailable") ? _reasonRaw : null;
+    const reasonText = reasonRaw ? (() => {
+      const tKey = `statusReason.${reasonRaw}`;
+      const t = this._t(tKey);
+      return t !== tKey ? t : reasonRaw;
+    })() : null;
 
     if (this._tabState[lpName] === undefined) this._tabState[lpName] = 0;
     const activeTab = this._tabState[lpName];
@@ -608,13 +731,88 @@ class EvccCard extends HTMLElement {
     return `
       <div class="loadpoint" data-lp-compact="${lpName}">
         <div class="lp-header">
-          <span class="lp-name">${this._config.title || lpName}</span>
+          <span class="lp-name">${_headerIcons.evStation} ${this._config.title || lpTitle}</span>
           <span class="lp-badge ${statusClass}">
             ${statusLabel}
           </span>
         </div>
         ${tabBar}
         ${tabContent}
+      </div>
+    `;
+  }
+
+  _renderHeatingLoadpoint(lpName, ents) {
+    const isHeating  = ents.charging ? isOn(this._hass, ents.charging) : false;
+    const lpTitle    = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+
+    const fireIcon = _headerIcons.fire;
+    const statusLabel = isHeating ? this._t("heating") : this._t("heatingIdle");
+    const statusClass = isHeating ? "heating" : "idle";
+
+    // Temperature display + bar (analog zum SOC-Block)
+    let tempHtml = "";
+    if (this._hass.states[ents.vehicle_soc]) {
+      const currentTemp = parseFloat(stateVal(this._hass, ents.vehicle_soc));
+      const currentUnit = unitStr(this._hass, ents.vehicle_soc) || "°C";
+      const targetTemp  = ents.limit_soc
+        ? parseFloat(stateVal(this._hass, ents.limit_soc)) : null;
+
+      // Bar range: slider min/max or config overrides, fallback 0-100
+      const sliderMin = this._config.target_temp_min
+        ?? attr(this._hass, ents.limit_soc, "min") ?? 0;
+      const sliderMax = this._config.target_temp_max
+        ?? attr(this._hass, ents.limit_soc, "max") ?? 100;
+      const barRange  = sliderMax - sliderMin;
+      const fillPct   = barRange > 0
+        ? Math.min(100, Math.max(0, ((currentTemp - sliderMin) / barRange) * 100))
+        : 0;
+      const limitPct  = (targetTemp !== null && !isNaN(targetTemp) && barRange > 0)
+        ? Math.min(100, Math.max(0, ((targetTemp - sliderMin) / barRange) * 100))
+        : null;
+
+      const tempColor = currentTemp >= 60 ? "var(--evcc-red)"
+                      : currentTemp >= 40 ? "var(--evcc-amber)"
+                      : "var(--evcc-blue)";
+
+      tempHtml = `
+        <div class="temp-display">
+          <div class="temp-current" style="color:${tempColor}">
+            ${isNaN(currentTemp) ? "—" : Math.round(currentTemp)} ${currentUnit}
+          </div>
+          ${targetTemp !== null && !isNaN(targetTemp) ? `
+            <div class="temp-target-label">
+              ${this._t("targetTemp")}: ${Math.round(targetTemp)} ${currentUnit}
+            </div>` : ""}
+        </div>
+        <div class="soc-track" style="background:var(--divider-color,#e5e7eb);margin-bottom:12px">
+          <div class="soc-fill ${isHeating ? "charging" : ""}"
+               style="width:${fillPct}%;background:${tempColor}"></div>
+          ${limitPct !== null ? `<div class="soc-limit-marker" style="left:${limitPct}%"></div>` : ""}
+        </div>`;
+    }
+
+    // Target temperature slider
+    let targetSliderHtml = "";
+    if (ents.limit_soc) {
+      const overrides = { step: 1 };
+      if (this._config.target_temp_min != null) overrides.min = this._config.target_temp_min;
+      if (this._config.target_temp_max != null) overrides.max = this._config.target_temp_max;
+      targetSliderHtml = `<div class="sliders">${this._sliderRow(ents.limit_soc, this._t("targetTemp"), null, overrides)}</div>`;
+    }
+
+    return `
+      <div class="loadpoint">
+        <div class="lp-header">
+          <span class="lp-name">${fireIcon} ${this._config.title || lpTitle}</span>
+          <span class="lp-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        ${this._renderModeSelector(ents)}
+        ${tempHtml}
+        ${targetSliderHtml}
+        ${this._renderPowerRow(ents, isHeating, "heating")}
+        ${this._renderCurrentBlock(ents, lpName)}
+        ${this._config.show_session_energy ? this._renderSessionInfo(ents, isHeating) : ""}
       </div>
     `;
   }
@@ -665,16 +863,23 @@ class EvccCard extends HTMLElement {
     if (!ents.vehicle_soc && !ents.vehicle_name) return "";
     const vehicleAttrs = ents.vehicle_name
       ? (this._hass.states[ents.vehicle_name]?.attributes ?? {}) : {};
-    const vehicleName  = vehicleAttrs.vehicle?.name || null;
-    const validName    = vehicleName && vehicleName !== "null" ? vehicleName : null;
+    const vehicleName    = vehicleAttrs.vehicle?.name || null;
+    const currentVehicle = ents.vehicle_name
+      ? (this._hass.states[ents.vehicle_name]?.state ?? null) : null;
+    const isGuestActive  = currentVehicle === "null" || currentVehicle === "—";
+    const validName      = (vehicleName && vehicleName !== "null")
+      ? vehicleName
+      : (isGuestActive ? this._t("guestVehicle") : null);
 
     if (!ents.vehicle_soc && !validName) return "";
 
     const soc   = ents.vehicle_soc ? parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0 : null;
     const range = ents.vehicle_range
       ? Math.round(parseFloat(stateVal(this._hass, ents.vehicle_range))) : null;
-    const limit  = ents.limit_soc ? parseFloat(stateVal(this._hass, ents.limit_soc))  : null;
-    const minSoc = ents.min_soc   ? parseFloat(stateVal(this._hass, ents.min_soc))    : null;
+    const limitEntity  = this._resolveVehicleEntity(ents, "limit_soc") || ents.limit_soc;
+    const minSocEntity = this._resolveVehicleEntity(ents, "min_soc")   || ents.min_soc;
+    const limit  = limitEntity  ? parseFloat(stateVal(this._hass, limitEntity))   : null;
+    const minSoc = minSocEntity ? parseFloat(stateVal(this._hass, minSocEntity))  : null;
     const fillBg  = soc !== null ? socFillGradient(soc, minSoc ?? 0, limit ?? 100) : "var(--evcc-blue)";
     const trackBg = socTrackBg(minSoc ?? 0, limit ?? 100);
 
@@ -716,7 +921,7 @@ class EvccCard extends HTMLElement {
     `;
   }
 
-  _renderPowerRow(ents, charging) {
+  _renderPowerRow(ents, charging, activeClass = "charging") {
     if (!ents.charge_power) return "";
     const power   = parseFloat(stateVal(this._hass, ents.charge_power)).toFixed(1);
     const unit    = unitStr(this._hass, ents.charge_power);
@@ -729,7 +934,7 @@ class EvccCard extends HTMLElement {
                       : phases !== null ? `${phases}` : null;
 
     return `
-      <div class="power-row ${charging ? "charging" : ""}">
+      <div class="power-row ${charging ? activeClass : ""}">
         <span class="power-value"
               data-live-entity="${ents.charge_power}" data-live-type="power">
           ${power} ${unit}
@@ -740,15 +945,38 @@ class EvccCard extends HTMLElement {
     `;
   }
 
+  _resolveVehicleEntity(ents, suffix) {
+    if (!ents.vehicle_name) return null;
+    const vAttrs = this._hass.states[ents.vehicle_name]?.attributes ?? {};
+    const vState = this._hass.states[ents.vehicle_name]?.state ?? null;
+    if (!vState || vState === "null" || vState === "—") return null;
+    const rawId = (vAttrs.vehicle_ids ?? {})[vState] ?? null;
+    if (rawId == null) return null;
+    const dbId = String(rawId).replace(/^db:/, "");
+    const prefix = this._getPrefix();
+    for (const domain of ["number", "select"]) {
+      const candidate = `${domain}.${prefix}vehicle_db_${dbId}_${suffix}`;
+      if (this._hass.states[candidate]) return candidate;
+    }
+    return null;
+  }
+
   _renderSliders(ents) {
     const SLIDER_FEATURES = [
-      { key: "limit_soc",   label: this._t("targetSoc") },
-      { key: "min_soc",     label: this._t("minSoc")    },
+      { key: "limit_soc", label: this._t("targetSoc"), preferLoadpoint: false },
+      { key: "min_soc",   label: this._t("minSoc"),    preferLoadpoint: false },
     ];
 
     const rows = SLIDER_FEATURES
-      .filter(({ key }) => ents[key])
-      .map(({ key, label }) => this._sliderRow(ents[key], label));
+      .map(({ key, label, preferLoadpoint }) => {
+        const vehicleEntity   = this._resolveVehicleEntity(ents, key);
+        const loadpointEntity = ents[key];
+        const entity = preferLoadpoint
+          ? (loadpointEntity || vehicleEntity)
+          : (vehicleEntity   || loadpointEntity);
+        return entity ? this._sliderRow(entity, label) : null;
+      })
+      .filter(Boolean);
 
     return rows.length ? `<div class="sliders">${rows.join("")}</div>` : "";
   }
@@ -829,7 +1057,7 @@ class EvccCard extends HTMLElement {
       </div>`;
   }
 
-  _sliderRow(entityId, label, zeroLabel = null) {
+  _sliderRow(entityId, label, zeroLabel = null, overrides = {}) {
     const domain  = entityId.split(".")[0];
     const _v      = parseFloat(stateVal(this._hass, entityId));
     const val     = isNaN(_v) ? 0 : _v;
@@ -849,6 +1077,9 @@ class EvccCard extends HTMLElement {
       max  = attr(this._hass, entityId, "max")  ?? 100;
       step = attr(this._hass, entityId, "step") ?? 1;
     }
+    if (overrides.min  != null) min  = overrides.min;
+    if (overrides.max  != null) max  = overrides.max;
+    if (overrides.step != null) step = overrides.step;
 
     return `
       <div class="slider-row">
@@ -962,7 +1193,8 @@ class EvccCard extends HTMLElement {
   }
 
   _renderPlanBlock(lpName, ents, force = false) {
-    const hasVehicle = !!ents.vehicle_soc;
+    const hasVehicle    = !!ents.vehicle_soc;
+    const vehicleSocValid = hasVehicle && !isNaN(parseFloat(stateVal(this._hass, ents.vehicle_soc)));
     const planActive = ents.plan_active ? isOn(this._hass, ents.plan_active) : false;
     const planTime   = ents.effective_plan_time
       ? stateVal(this._hass, ents.effective_plan_time) : null;
@@ -976,13 +1208,22 @@ class EvccCard extends HTMLElement {
     if (!ents.effective_plan_soc || !this._hass.states[ents.effective_plan_soc]) return "";
     if (!force && !hasVehicle && !planActive) return "";
 
+    const lpTitle = this._hass.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+
     const vehicleEntityId    = ents.vehicle_name || null;
     const vehicleAttrs       = vehicleEntityId ? (this._hass.states[vehicleEntityId]?.attributes ?? {}) : {};
-    const allOptions         = (vehicleAttrs.options ?? []).filter(o => o !== "null");
+    const vehicleIds         = vehicleAttrs.vehicle_ids ?? {};
+    const GUEST_VALUES = ["null", "—"];
+    const GUEST_LABEL  = this._t("guestVehicle");
+    const rawOptions   = vehicleAttrs.options ?? [];
+    const hasGuest     = rawOptions.some(o => GUEST_VALUES.includes(o));
+    const namedOptions = rawOptions.filter(o => !GUEST_VALUES.includes(o));
+    const guestValue   = rawOptions.find(o => GUEST_VALUES.includes(o)) ?? "—";
+    const allOptions   = hasGuest ? [...namedOptions, guestValue] : namedOptions;
     const vehicleAttr        = vehicleAttrs.vehicle ?? null;
 
     if (!this._planState[lpName]) {
-      this._planState[lpName] = { soc: null, time: null, vehicle: null };
+      this._planState[lpName] = { soc: null, energy: null, time: null, vehicle: null };
     }
 
     if (this._planState[lpName].soc == null) {
@@ -993,6 +1234,10 @@ class EvccCard extends HTMLElement {
       this._planState[lpName].soc = (parsedPlanSoc > 0)
         ? Math.round(parsedPlanSoc)
         : vehicleLimitSoc ?? (entityLimitSoc > 0 ? entityLimitSoc : 80);
+    }
+
+    if (this._planState[lpName].energy == null) {
+      this._planState[lpName].energy = 10;
     }
 
     if (this._planState[lpName].time == null) {
@@ -1015,22 +1260,27 @@ class EvccCard extends HTMLElement {
     }
 
     const defaultSoc     = this._planState[lpName].soc;
+    const defaultEnergy  = this._planState[lpName].energy ?? 10;
     const defaultDt      = this._planState[lpName].time;
+    const planSaveStatus = this._planState[lpName]._status ?? null;
+    const planSaveMsg    = this._planState[lpName]._statusMsg ?? null;
 
-    const dbIdToName = {};
-    allOptions.forEach(id => {
-      const path = `component.evcc_intg.entity.select.vehiclename.state.${id}`;
-      const translated = this._hass.localize(path);
-      dbIdToName[id] = translated || id;
-    });
-
-    const currentVehicleId = vehicleEntityId ? this._hass.states[vehicleEntityId]?.state : null;
-    if (currentVehicleId && currentVehicleId !== "null") {
-      if (this._planState[lpName].vehicle && this._planState[lpName].vehicle !== currentVehicleId) {
-        this._planState[lpName].soc  = null;
-        this._planState[lpName].time = null;
+    const currentVehicleTitle = vehicleEntityId ? this._hass.states[vehicleEntityId]?.state : null;
+    if (currentVehicleTitle) {
+      const isGuest = currentVehicleTitle === "null" || currentVehicleTitle === "—";
+      const prev    = this._planState[lpName].vehicle;
+      if (!isGuest) {
+        if (prev && prev !== currentVehicleTitle) {
+          this._planState[lpName].soc    = null;
+          this._planState[lpName].energy = null;
+          this._planState[lpName].time   = null;
+        }
+        this._planState[lpName].vehicle = currentVehicleTitle;
+      } else if (!GUEST_VALUES.includes(prev)) {
+        this._planState[lpName].energy = null;
+        this._planState[lpName].time   = null;
+        this._planState[lpName].vehicle = guestValue;
       }
-      this._planState[lpName].vehicle = currentVehicleId;
     }
     const defaultVehicle = this._planState[lpName].vehicle;
 
@@ -1038,9 +1288,10 @@ class EvccCard extends HTMLElement {
       <div class="plan-row">
         <label>${this._t("vehicle")}</label>
         <select class="plan-vehicle-select" data-lp="${lpName}" data-entity="${vehicleEntityId ?? ""}">
-          ${allOptions.map(id => `
-            <option value="${id}" ${id === defaultVehicle ? "selected" : ""}>${dbIdToName[id]}</option>
-          `).join("")}
+          ${allOptions.map(val => {
+            const label = GUEST_VALUES.includes(val) ? GUEST_LABEL : val;
+            return `<option value="${val}" ${val === defaultVehicle ? "selected" : ""}>${label}</option>`;
+          }).join("")}
         </select>
       </div>` : "";
 
@@ -1083,6 +1334,57 @@ class EvccCard extends HTMLElement {
             <input type="datetime-local" class="plan-time-input"
                    value="${defaultDt}" data-lp="${lpName}" />
           </div>
+          ${(() => {
+            const prefix = this._getPrefix();
+            // LP-Ebene direkt über lpName konstruieren
+            const lpContinuousId   = `switch.${prefix}${lpName}_plan_continuous`;
+            const lpPreconditionId = `select.${prefix}${lpName}_plan_precondition`;
+            // Fahrzeug-Ebene wenn ein benanntes Fahrzeug ausgewählt ist
+            let vhContinuousId   = null;
+            let vhPreconditionId = null;
+            const vState = vehicleEntityId
+              ? (this._hass.states[vehicleEntityId]?.state ?? null) : null;
+            if (vState && vState !== "null" && vState !== "—") {
+              const rawId = vehicleIds[vState] ?? null;
+              if (rawId != null) {
+                const slug = String(rawId).toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+                vhContinuousId   = `switch.${prefix}vehicle_${slug}_plan_continuous`;
+                vhPreconditionId = `select.${prefix}vehicle_${slug}_plan_precondition`;
+              }
+            }
+            // Fahrzeug-Entity bevorzugen wenn vorhanden, sonst LP-Entity
+            const continuousEntity   = (vhContinuousId   && this._hass.states[vhContinuousId])
+              ? vhContinuousId   : (this._hass.states[lpContinuousId]   ? lpContinuousId   : null);
+            const preconditionEntity = (vhPreconditionId && this._hass.states[vhPreconditionId])
+              ? vhPreconditionId : (this._hass.states[lpPreconditionId] ? lpPreconditionId : null);
+            const PRECONDITION_LABELS = { "0": "—", "900": "15 min", "1800": "30 min", "3600": "1h", "7200": "2h", "604800": "7d" };
+            const continuousHtml = continuousEntity ? (() => {
+              const continuous = isOn(this._hass, continuousEntity);
+              return `
+                <div class="plan-row">
+                  <label>${this._t("planContinuous")}</label>
+                  <button class="plan-toggle ${continuous ? 'on' : ''}"
+                          data-entity="${continuousEntity}" data-domain="switch" data-on="${continuous}">
+                    ${continuous ? this._t("planContinuousOn") : this._t("planContinuousOff")}
+                  </button>
+                </div>`;
+            })() : "";
+            const preconditionHtml = preconditionEntity ? (() => {
+              const options = this._hass.states[preconditionEntity]?.attributes?.options ?? Object.keys(PRECONDITION_LABELS);
+              const current = stateVal(this._hass, preconditionEntity) ?? "0";
+              return `
+                <div class="plan-row">
+                  <label>${this._t("planPrecondition")}</label>
+                  <select class="plan-precondition-select" data-entity="${preconditionEntity}">
+                    ${options.map(o => `<option value="${o}" ${o === current ? "selected" : ""}>${PRECONDITION_LABELS[o] ?? o}</option>`).join("")}
+                  </select>
+                </div>`;
+            })() : "";
+            if (!continuousHtml && !preconditionHtml) return "";
+            return `<div class="plan-row-group">${continuousHtml}${preconditionHtml}</div>`;
+          })()}
+          ${((defaultVehicle && defaultVehicle !== "null" && defaultVehicle !== "—") || vehicleSocValid) ? `
           <div class="plan-row">
             <label>${this._t("targetSoc")}</label>
             <div class="plan-soc-control">
@@ -1091,12 +1393,24 @@ class EvccCard extends HTMLElement {
                      data-lp="${lpName}" />
               <span class="plan-soc-val">${defaultSoc} %</span>
             </div>
-          </div>
+          </div>` : `
+          <div class="plan-row">
+            <label>${this._t("targetEnergy")}</label>
+            <div class="plan-soc-control">
+              <input type="range" class="plan-energy-range"
+                     min="5" max="100" step="5" value="${defaultEnergy}"
+                     data-lp="${lpName}" />
+              <span class="plan-energy-val">${defaultEnergy} kWh</span>
+            </div>
+          </div>`}
         </div>
         <div class="plan-actions">
-          <button class="plan-btn save" data-lp="${lpName}">${this._t("setPlan")}</button>
+          <button class="plan-btn save" data-lp="${lpName}" data-lp-title="${lpTitle}">${this._t("setPlan")}</button>
           ${(planActive || (planTime && planTime !== "unknown" && planTime !== "unavailable"))
-            ? `<button class="plan-btn delete" data-lp="${lpName}">${this._t("deletePlan")}</button>`
+            ? `<button class="plan-btn delete" data-lp="${lpName}" data-lp-title="${lpTitle}">${this._t("deletePlan")}</button>`
+            : ""}
+          ${planSaveStatus === "error"
+            ? `<div class="plan-error">❌ ${planSaveMsg}</div>`
             : ""}
         </div>
       </div>
@@ -1114,7 +1428,7 @@ class EvccCard extends HTMLElement {
       return `${v.toFixed(decimals)}${unit ? " " + unit : ""}`;
     };
 
-    const energy      = ents.session_energy          ? (() => { const v = parseFloat(stateVal(this._hass, ents.session_energy)); return isNaN(v) ? "—" : `${v.toFixed(2)} kWh`; })() : null;
+    const energy      = ents.session_energy          ? (() => { const v = parseFloat(stateVal(this._hass, ents.session_energy)); if (isNaN(v)) return "—"; const unit = unitStr(this._hass, ents.session_energy) || "kWh"; if (unit === "Wh") { return v >= 1000 ? `${(v / 1000).toFixed(2)} kWh` : `${Math.round(v)} Wh`; } return `${v.toFixed(2)} ${unit}`; })() : null;
     const price       = ents.session_price           ? (() => { const v = parseFloat(stateVal(this._hass, ents.session_price)); const u = unitStr(this._hass, ents.session_price) || "€"; return isNaN(v) ? "—" : `${v.toFixed(2)} ${u}`; })() : null;
     const fmtPerKwh = (entityId, decimals) => {
       const v = parseFloat(stateVal(this._hass, entityId));
@@ -1151,12 +1465,46 @@ class EvccCard extends HTMLElement {
       return `
         <div class="loadpoint">
           <div class="lp-header">
-            <span class="lp-name">${this._config.title || lpName}</span>
+            <span class="lp-name">${_headerIcons.calendarClock} ${this._config.title || (this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName)}</span>
           </div>
           ${planHtml}
           ${sessionHtml}
         </div>`;
     }).join("");
+  }
+
+  _renderPriorityMode(loadpoints) {
+    const lpKeys = Object.keys(loadpoints);
+    if (this._priorityOrder === null || !this._priorityOrder.every(k => lpKeys.includes(k))) {
+      this._priorityOrder = lpKeys;
+    }
+    const isHeater = (ents) => ents.charger_feature_heating && isOn(this._hass, ents.charger_feature_heating);
+    const items = this._priorityOrder.map((lpName, idx) => {
+      const ents = loadpoints[lpName] || {};
+      const title = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+      const heater = isHeater(ents);
+      const typeIcon = heater
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c0 4-4 5-4 9a4 4 0 0 0 8 0c0-4-4-5-4-9z"/><path d="M12 22v-3"/></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h2l3 3v4h-5V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
+      return `<div class="priority-item" draggable="true" data-lp="${lpName}">
+        <span class="drag-handle">⠿</span>
+        <span class="priority-badge">${idx + 1}</span>
+        <span class="priority-title">${title}</span>
+        <span class="priority-type">${typeIcon}</span>
+      </div>`;
+    }).join("");
+    return `<div class="loadpoint">
+      <div class="lp-header">
+        <span class="lp-name">${_headerIcons.evStation} ${this._config.title || this._t("priorityTitle")}</span>
+      </div>
+      <div class="priority-mode">
+        <div class="priority-hint">${this._t("priorityHint")}</div>
+        <div class="priority-list">${items}</div>
+        <div class="priority-actions">
+          <button class="priority-save-btn">${this._t("prioritySave")}</button>
+        </div>
+      </div>
+    </div>`;
   }
 
   _renderSiteBlock(site, loadpoints = {}) {
@@ -1169,15 +1517,10 @@ class EvccCard extends HTMLElement {
     const kwh = id => id ? parseFloat(stateVal(this._hass, id)) || 0 : null;
     const ct  = id => id ? parseFloat(stateVal(this._hass, id)) || 0 : null;
 
-    const pvNameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
-    const pvSources = [
-      { key: "pv_0_power", energyKey: "pv_0_energy", idx: 1 },
-      { key: "pv_1_power", energyKey: "pv_1_energy", idx: 2 },
-      { key: "pv_2_power", energyKey: "pv_2_energy", idx: 3 },
-      { key: "pv_3_power", energyKey: "pv_3_energy", idx: 4 },
-    ].filter(s => site[s.key]).map(s => ({
+    const nameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
+    const pvSources = _discoverDeviceSources(site, "pv", "power", "energy").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `PV ${s.idx}`,
+      label: nameFromEntity(site[s.key]) ?? `PV ${s.idx + 1}`,
     }));
     const pvPow = pvSources.length > 0
       ? pvSources.reduce((sum, s) => sum + kw(site[s.key]), 0)
@@ -1185,14 +1528,9 @@ class EvccCard extends HTMLElement {
     const pvKwh = pvSources.length > 0
       ? pvSources.reduce((sum, s) => sum + (kwh(site[s.energyKey]) ?? 0), 0)
       : kwh(site.pv_energy);
-    const battSources = [
-      { key: "battery_0_power", socKey: "battery_0_soc", idx: 0 },
-      { key: "battery_1_power", socKey: "battery_1_soc", idx: 1 },
-      { key: "battery_2_power", socKey: "battery_2_soc", idx: 2 },
-      { key: "battery_3_power", socKey: "battery_3_soc", idx: 3 },
-    ].filter(s => site[s.key]).map(s => ({
+    const battSources = _discoverDeviceSources(site, "battery", "power", "soc").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
+      label: nameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
     }));
     const gridPow = kw(site.grid_power);
     const battPow = kw(site.battery_power);
@@ -1232,10 +1570,8 @@ class EvccCard extends HTMLElement {
 
     const batterySoc = kwh(site.battery_soc);
     const gridKwh    = kwh(site.grid_energy);
-    const exportKwh  = kwh(site.grid_energy_export);
     const battCKwh   = kwh(site.battery_energy_charge);
     const battDKwh   = kwh(site.battery_energy_discharge);
-    const homeKwh    = kwh(site.home_energy);
 
     const tariffGrid   = ct(site.tariff_grid);
     const tariffFeedin = ct(site.tariff_feedin);
@@ -1448,7 +1784,8 @@ class EvccCard extends HTMLElement {
         const val    = ents.vehicle_soc
           ? `${Math.round(parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0)} ${unit}`
           : "";
-        const label  = val ? `${lpName.toUpperCase()} – ${val}` : lpName.toUpperCase();
+        const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        const label  = val ? `${lpTitle} – ${val}` : lpTitle;
         const icon   = unit.includes("°")
           ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 0,0 12,22A5,5 0 0,0 15,13M12,4A1,1 0 0,1 13,5V14.08C14.16,14.54 15,15.67 15,17A3,3 0 0,1 12,20A3,3 0 0,1 9,17C9,15.67 9.84,14.54 11,14.08V5A1,1 0 0,1 12,4Z"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7.03 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14A2,2 0 0,0 15,12H14V5A2,2 0 0,0 12,3H6A2,2 0 0,0 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10M12,10H6V5H12V10Z"/></svg>`;
@@ -1512,7 +1849,7 @@ class EvccCard extends HTMLElement {
     return `
       <div class="site-block">
         <div class="lp-header">
-          <span class="lp-name">${this._config.title || this._t("overview")}</span>
+          <span class="lp-name">${_headerIcons.home} ${this._config.title || this._t("overview")}</span>
         </div>
         <div class="flow-wrap-clickable" role="button" tabindex="0"
              onclick="window.__evccCards.get('${this._cardId}')._toggleSite()"
@@ -1537,27 +1874,17 @@ class EvccCard extends HTMLElement {
     };
     const kwh = id => id ? parseFloat(stateVal(this._hass, id)) || 0 : null;
 
-    const pvNameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
-    const pvSources = [
-      { key: "pv_0_power", energyKey: "pv_0_energy", idx: 1 },
-      { key: "pv_1_power", energyKey: "pv_1_energy", idx: 2 },
-      { key: "pv_2_power", energyKey: "pv_2_energy", idx: 3 },
-      { key: "pv_3_power", energyKey: "pv_3_energy", idx: 4 },
-    ].filter(s => site[s.key]).map(s => ({
+    const nameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
+    const pvSources = _discoverDeviceSources(site, "pv", "power", "energy").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `PV ${s.idx}`,
+      label: nameFromEntity(site[s.key]) ?? `PV ${s.idx + 1}`,
     }));
     const pvPow = pvSources.length > 0
       ? pvSources.reduce((sum, s) => sum + kw(site[s.key]), 0)
       : kw(site.pv_power);
-    const battSources = [
-      { key: "battery_0_power", socKey: "battery_0_soc", idx: 0 },
-      { key: "battery_1_power", socKey: "battery_1_soc", idx: 1 },
-      { key: "battery_2_power", socKey: "battery_2_soc", idx: 2 },
-      { key: "battery_3_power", socKey: "battery_3_soc", idx: 3 },
-    ].filter(s => site[s.key]).map(s => ({
+    const battSources = _discoverDeviceSources(site, "battery", "power", "soc").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
+      label: nameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
     }));
     const gridPow = kw(site.grid_power);
     const battPow = kw(site.battery_power);
@@ -1855,7 +2182,8 @@ class EvccCard extends HTMLElement {
         const val    = ents.vehicle_soc
           ? `${Math.round(parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0)} ${unit}`
           : "";
-        const label  = val ? `${lpName.toUpperCase()} – ${val}` : lpName.toUpperCase();
+        const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        const label  = val ? `${lpTitle} – ${val}` : lpTitle;
         const icon   = unit.includes("°")
           ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="${MDI.heat || "M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 0,0 12,22A5,5 0 0,0 15,13M12,4A1,1 0 0,1 13,5V14.08C14.16,14.54 15,15.67 15,17A3,3 0 0,1 12,20A3,3 0 0,1 9,17C9,15.67 9.84,14.54 11,14.08V5A1,1 0 0,1 12,4Z"}"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="${MDI.ev}"/></svg>`;
@@ -1917,7 +2245,7 @@ class EvccCard extends HTMLElement {
     return `
       <div class="site-block">
         <div class="lp-header">
-          <span class="lp-name">${this._config.title || this._t("energyFlow") || this._t("overview")}</span>
+          <span class="lp-name">${_headerIcons.transfer} ${this._config.title || this._t("energyFlow") || this._t("overview")}</span>
         </div>
         ${sankeySvg}
         <div class="site-table" style="${siteExpanded ? '' : 'display:none'}">
@@ -1937,17 +2265,9 @@ class EvccCard extends HTMLElement {
       return unit === "kW" ? raw : raw / 1000;
     };
 
-    const pvSources = [
-      { key: "pv_0_power" }, { key: "pv_1_power" },
-      { key: "pv_2_power" }, { key: "pv_3_power" },
-    ].filter(s => site[s.key]);
+    const pvSources = _discoverDeviceSources(site, "pv", "power");
 
-    const battSources = [
-      { key: "battery_0_power", socKey: "battery_0_soc", idx: 0 },
-      { key: "battery_1_power", socKey: "battery_1_soc", idx: 1 },
-      { key: "battery_2_power", socKey: "battery_2_soc", idx: 2 },
-      { key: "battery_3_power", socKey: "battery_3_soc", idx: 3 },
-    ].filter(s => site[s.key]).map(s => ({
+    const battSources = _discoverDeviceSources(site, "battery", "power", "soc").map(s => ({
       ...s,
       label: (site[s.key] ? (attr(this._hass, site[s.key], "title") ?? null) : null) ?? `${this._t("battery")} ${s.idx + 1}`,
     }));
@@ -2004,7 +2324,8 @@ class EvccCard extends HTMLElement {
         const soc   = ents.vehicle_soc
           ? `${Math.round(parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0)} ${unit}`
           : "";
-        return chip("var(--evcc-blue)", lpName.toUpperCase(), soc ? `${fmtKw(lpPow)} · ${soc}` : fmtKw(lpPow), ents.charge_power);
+        const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        return chip("var(--evcc-blue)", lpTitle, soc ? `${fmtKw(lpPow)} · ${soc}` : fmtKw(lpPow), ents.charge_power);
       }).join("");
 
     const aggBattSoc = site.battery_soc ? Math.round(parseFloat(stateVal(this._hass, site.battery_soc)) || 0) : null;
@@ -2050,7 +2371,7 @@ class EvccCard extends HTMLElement {
     return `
       <div class="s2-block">
         <div class="lp-header">
-          <span class="lp-name">${this._config.title || this._t("grid")}</span>
+          <span class="lp-name">${_headerIcons.grid} ${this._config.title || this._t("grid")}</span>
         </div>
         <div class="s2-net">
           <div class="s2-net-label">${this._t("gridStatus") || "Netzstatus"}</div>
@@ -2065,216 +2386,42 @@ class EvccCard extends HTMLElement {
   }
 
   _getStatEntityIds(period) {
-    const per    = period ?? this._statsPeriod ?? "total";
-    const base   = `sensor.${this._getPrefix()}`;
-    const find   = id => this._hass?.states[id] ? id : null;
-    const sufMap = {
-      total:    { kwh: "stat_total_charged_kwh",    solar: "stat_total_solar_percentage",    price: "stat_total_avg_price"    },
-      "30d":    { kwh: "stat30_charged_kwh",         solar: "stat30_solar_percentage",         price: "stat30_avg_price"         },
-      "365d":   { kwh: "stat365_charged_kwh",        solar: "stat365_solar_percentage",        price: "stat365_avg_price"        },
-      thisYear: { kwh: "stat_this_year_charged_kwh", solar: "stat_this_year_solar_percentage", price: "stat_this_year_avg_price" },
+    const per  = period ?? this._statsPeriod ?? "total";
+    const base = `sensor.${this._getPrefix()}`;
+    // Try multiple entity name candidates, return first that exists
+    const findFirst = (...ids) => ids.find(id => this._hass?.states[id]) ?? null;
+
+    // New integration: stats_{period_key}_{metric_key}
+    // Old integration: stat30_*, stat365_*, stat_this_year_*, stat_total_*
+    const newOldMap = {
+      total:    {
+        kwh:   ["stats_total_charged_kwh",    "stat_total_charged_kwh"],
+        solar: ["stats_total_solar_percentage","stat_total_solar_percentage"],
+        price: ["stats_total_avg_price",       "stat_total_avg_price"],
+      },
+      month:    {
+        kwh:   ["stats_30d_charged_kwh",    "stat30_charged_kwh"],
+        solar: ["stats_30d_solar_percentage","stat30_solar_percentage"],
+        price: ["stats_30d_avg_price",       "stat30_avg_price"],
+      },
+      year:     {
+        kwh:   ["stats_this_year_charged_kwh",    "stat_this_year_charged_kwh"],
+        solar: ["stats_this_year_solar_percentage","stat_this_year_solar_percentage"],
+        price: ["stats_this_year_avg_price",       "stat_this_year_avg_price"],
+      },
     };
-    const s = sufMap[per] ?? sufMap.total;
+    const s = newOldMap[per] ?? newOldMap.total;
     return {
-      kwhId:      find(`${base}${s.kwh}`),
-      solarId:    find(`${base}${s.solar}`),
-      priceId:    find(`${base}${s.price}`),
-      solarKwhId: find(`${base}stat_total_solar_k_wh_template`),
+      kwhId:      findFirst(...s.kwh.map(n => `${base}${n}`)),
+      solarId:    findFirst(...s.solar.map(n => `${base}${n}`)),
+      priceId:    findFirst(...s.price.map(n => `${base}${n}`)),
+      solarKwhId: findFirst(`${base}stats_total_solar_kwh`, `${base}stat_total_solar_k_wh_template`),
     };
   }
 
-  _renderStatsPeriodTabs(size = "normal") {
-    const cur  = this._statsPeriod ?? "total";
-    const defs = [
-      { key: "30d",      tKey: "statsPeriod30d"      },
-      { key: "365d",     tKey: "statsPeriod365d"     },
-      { key: "thisYear", tKey: "statsPeriodThisYear" },
-      { key: "total",    tKey: "statsPeriodTotal"    },
-    ];
-    const btns = defs.map(d =>
-      `<button class="stats-period-tab${d.key === cur ? " active" : ""}" data-period="${d.key}">${this._t(d.tKey)}</button>`
-    ).join("");
-    return `<div class="stats-period-tabs${size === "small" ? " stats-period-tabs--small" : ""}">${btns}</div>`;
-  }
 
-  _maybeRefreshStats() {
-    const period = this._statsPeriod ?? "total";
-    const age = Date.now() - (this._chartCacheTime[period] ?? 0);
-    if (age > 5 * 60 * 1000) {
-      this._chartCacheTime[period] = Date.now();
-      this._fetchChartData(period);
-    }
-  }
-
-  async _fetchChartData(period) {
-    const { kwhId, solarKwhId } = this._getStatEntityIds("total"); // always use cumulative total entities
-    if (!kwhId) return;
-
-    const now   = new Date();
-    let startTime, recorderPeriod;
-
-    if (period === "30d") {
-      startTime = new Date(now);
-      startTime.setDate(startTime.getDate() - 31);
-      startTime.setHours(0, 0, 0, 0);
-      recorderPeriod = "day";
-    } else if (period === "365d") {
-      startTime = new Date(now.getFullYear(), now.getMonth() - 14, 1);
-      recorderPeriod = "month";
-    } else if (period === "thisYear") {
-      startTime = new Date(now.getFullYear(), 0, 1);
-      recorderPeriod = "month";
-    } else { // total
-      startTime = new Date(2010, 0, 1);
-      recorderPeriod = "month";
-    }
-
-    try {
-      const ids = [kwhId];
-      if (solarKwhId) ids.push(solarKwhId);
-      const result = await this._hass.callWS({
-        type: "recorder/statistics_during_period",
-        start_time: startTime.toISOString(),
-        statistic_ids: ids,
-        period: recorderPeriod,
-        types: ["sum"],
-      });
-      const stats      = result[kwhId]      ?? [];
-      let   solarStats = solarKwhId ? (result[solarKwhId] ?? []) : [];
-
-      // Template sensor exists but has too few data points yet → no solar split until it has history
-      // Only count on daily queries (most granular), don't overwrite with monthly bucket counts
-      if (recorderPeriod === "day") {
-        this._solarDataPoints = solarKwhId ? solarStats.length : null;
-      } else if (this._solarDataPoints === undefined) {
-        this._solarDataPoints = solarKwhId ? solarStats.length : null;
-      }
-      if (solarStats.length < 3) solarStats = [];
-
-      const liveKwh      = parseFloat(this._hass.states[kwhId]?.state);
-      const liveSolarKwh = solarKwhId ? parseFloat(this._hass.states[solarKwhId]?.state) : NaN;
-
-      if      (period === "30d")      this._chartCache[period] = this._computeDailyDeltas(stats, 30, solarStats, isNaN(liveKwh) ? null : liveKwh, isNaN(liveSolarKwh) ? null : liveSolarKwh);
-      else if (period === "365d")     this._chartCache[period] = this._computeMonthlyDeltas(stats, 13, solarStats);
-      else if (period === "thisYear") this._chartCache[period] = this._computeThisYearMonthly(stats, solarStats);
-      else {
-        const yearly = this._computeYearlyTotals(stats, solarStats);
-        this._chartCache[period] = yearly.length <= 1
-          ? this._computeThisYearMonthly(stats, solarStats)  // only one year of data → show months
-          : yearly;
-      }
-
-      this._render();
-    } catch(e) {
-      console.warn("[evcc-card] chart error", e);
-    }
-  }
-
-  _computeDailyDeltas(stats, days, solarStats = [], liveKwh = null, liveSolarKwh = null) {
-    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
-    const now = new Date();
-    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`; };
-    const byKey = {};
-    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
-    const solarByKey = {};
-    solarStats.forEach(s => { solarByKey[toKey(s.start)] = s.sum; });
-    const result = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const day = new Date(now);
-      day.setDate(day.getDate() - i);
-      day.setHours(0, 0, 0, 0);
-      const prevDay = new Date(day);
-      prevDay.setDate(prevDay.getDate() - 1);
-      const cur   = byKey[toKey(day)] ?? (i === 0 ? liveKwh : null);
-      const prev  = byKey[toKey(prevDay)];
-      const delta = (cur != null && prev != null) ? Math.max(0, cur - prev) : null;
-      const sCur  = solarByKey[toKey(day)] ?? (i === 0 ? liveSolarKwh : null);
-      const sPrev = solarByKey[toKey(prevDay)];
-      const solarDelta = (sCur != null && sPrev != null) ? Math.max(0, sCur - sPrev) : null;
-      const labelStr = day.toLocaleDateString(lang, { day: "numeric", month: "numeric" });
-      result.push({ delta, solarDelta, label: day, labelStr, isCurrent: i === 0 });
-    }
-    return result;
-  }
-
-  _computeMonthlyDeltas(stats, count, solarStats = []) {
-    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
-    const now = new Date();
-    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}`; };
-    const byKey = {};
-    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
-    const solarByKey = {};
-    solarStats.forEach(s => { solarByKey[toKey(s.start)] = s.sum; });
-    const result = [];
-    for (let i = count - 1; i >= 0; i--) {
-      const month     = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const prevMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
-      const cur   = byKey[toKey(month)];
-      const prev  = byKey[toKey(prevMonth)];
-      const delta = (cur != null && prev != null) ? Math.max(0, cur - prev) : null;
-      const sCur  = solarByKey[toKey(month)];
-      const sPrev = solarByKey[toKey(prevMonth)];
-      const solarDelta = (sCur != null && sPrev != null) ? Math.max(0, sCur - sPrev) : null;
-      const labelStr = month.toLocaleDateString(lang, { month: "short" });
-      result.push({ delta, solarDelta, label: month, labelStr, isCurrent: i === 0 });
-    }
-    return result;
-  }
-
-  _computeThisYearMonthly(stats, solarStats = []) {
-    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
-    const now  = new Date();
-    const year = now.getFullYear();
-    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}`; };
-    const byKey = {};
-    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
-    const solarByKey = {};
-    solarStats.forEach(s => { solarByKey[toKey(s.start)] = s.sum; });
-    const result = [];
-    for (let m = 0; m <= now.getMonth(); m++) {
-      const month     = new Date(year, m, 1);
-      const prevMonth = new Date(year, m - 1, 1);
-      const cur   = byKey[toKey(month)];
-      const prev  = byKey[toKey(prevMonth)];
-      const delta = (cur != null && prev != null) ? Math.max(0, cur - prev) : null;
-      const sCur  = solarByKey[toKey(month)];
-      const sPrev = solarByKey[toKey(prevMonth)];
-      const solarDelta = (sCur != null && sPrev != null) ? Math.max(0, sCur - sPrev) : null;
-      const labelStr = month.toLocaleDateString(lang, { month: "short" });
-      result.push({ delta, solarDelta, label: month, labelStr, isCurrent: m === now.getMonth() });
-    }
-    return result;
-  }
-
-  _computeYearlyTotals(stats, solarStats = []) {
-    const now = new Date();
-    const toKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}`; };
-    const byKey = {};
-    stats.forEach(s => { byKey[toKey(s.start)] = s.sum; });
-    const solarByKey = {};
-    solarStats.forEach(s => { solarByKey[toKey(s.start)] = s.sum; });
-    const years = [...new Set(stats.map(s => new Date(s.start).getFullYear()))].sort();
-    return years.map(year => {
-      let yearTotal = 0, hasAny = false;
-      let solarTotal = 0, hasSolar = false;
-      for (let m = 0; m <= 11; m++) {
-        const cur  = byKey[`${year}-${m}`];
-        const prev = byKey[m === 0 ? `${year - 1}-11` : `${year}-${m - 1}`];
-        if (cur != null && prev != null) { yearTotal += Math.max(0, cur - prev); hasAny = true; }
-        const sCur  = solarByKey[`${year}-${m}`];
-        const sPrev = solarByKey[m === 0 ? `${year - 1}-11` : `${year}-${m - 1}`];
-        if (sCur != null && sPrev != null) { solarTotal += Math.max(0, sCur - sPrev); hasSolar = true; }
-      }
-      return {
-        delta:      hasAny   ? yearTotal  : null,
-        solarDelta: hasSolar ? solarTotal : null,
-        label: new Date(year, 0, 1), labelStr: String(year), isCurrent: year === now.getFullYear(),
-      };
-    });
-  }
-
-  _renderBarChart(data) {
-    const ML = 22, MR = 6, MT = 20, MB = 18;
+  _renderBarChart(data, yUnit = "kWh", showRollingAvg = false) {
+    const ML = 22, MR = showRollingAvg ? 26 : 6, MT = 20, MB = 18;
     const W = 280, H = 110;
     const CW = W - ML - MR, CH = H - MT - MB;
     const n = data.length;
@@ -2308,12 +2455,14 @@ class EvccCard extends HTMLElement {
                 fill="var(--secondary-text-color,#888)">${lbl}</text>`;
     }).join("");
 
-    // "kWh" above the topmost tick, like HA
+    // Unit label above the topmost tick, like HA
     const kwhLbl = `<text x="${ML - 3}" y="${MT - 8}" text-anchor="end" font-size="6.5"
-      fill="var(--secondary-text-color,#888)">kWh</text>`;
+      fill="var(--secondary-text-color,#888)">${yUnit}</text>`;
 
     // X-axis label spacing
     const showEvery = n > 15 ? Math.ceil(n / 7) : 1;
+
+    const rollingAvgs = [];
 
     const bars = data.map((d, i) => {
       const x0        = barX0(i);
@@ -2324,7 +2473,16 @@ class EvccCard extends HTMLElement {
       const R         = bw >= 4 ? 1.5 : 0;
 
       let barRect = "";
-      if (d.delta != null && d.delta > 0) {
+      if (d.segments?.length > 0) {
+        // Stacked bars – bottom to top
+        let stackY = MT + CH;
+        d.segments.slice().reverse().forEach(seg => {
+          if (seg.value == null || seg.value <= 0) return;
+          const segPx = Math.max(1, Math.round((seg.value / niceMax) * CH));
+          stackY -= segPx;
+          barRect += `<rect x="${x0}" y="${stackY}" width="${bw}" height="${segPx}" fill="${seg.color}" opacity="${opacity}" rx="${R}"/>`;
+        });
+      } else if (d.delta != null && d.delta > 0) {
         const totalPx = Math.max(2, Math.round((d.delta / niceMax) * CH));
         const topY    = toY(d.delta);
         const hasSolar = d.solarDelta != null && d.solarDelta > 0;
@@ -2346,20 +2504,74 @@ class EvccCard extends HTMLElement {
              fill="var(--secondary-text-color,#888)" opacity="${isCurrent ? "1" : "0.75"}">${d.labelStr}</text>`
         : "";
 
+      const segsAttr = d.segments
+        ? d.segments.map(s => `${s.label}|${s.value != null ? s.value.toFixed(2) : ""}|${s.color}`).join("~")
+        : "";
       const hitRect = `<rect class="evcc-bar" x="${x0}" y="${MT}" width="${bw}" height="${CH}"
         fill="transparent" style="cursor:pointer"
         data-label="${d.labelStr.replace(/"/g, "&quot;")}"
-        data-total="${d.delta != null ? d.delta.toFixed(1) : ""}"
-        data-solar="${d.solarDelta != null ? d.solarDelta.toFixed(1) : ""}"/>`;
+        data-total="${d.delta != null ? d.delta.toFixed(2) : ""}"
+        data-solar="${d.solarDelta != null ? d.solarDelta.toFixed(2) : ""}"
+        data-totalval="${d.totalVal != null ? d.totalVal.toFixed(4) : ""}"
+        data-segs="${segsAttr.replace(/"/g, "&quot;")}"/>`;
 
       return `${barRect}${hitRect}${labelSvg}`;
     }).join("");
 
-    return `<div class="evcc-chart-wrap">
+    // totalVal line (ct/kWh or g/kWh) + right axis
+    let tvLineSvg = "";
+    let rightAxisSvg = "";
+    if (showRollingAvg) {
+      const tvVals = data.map(d => d.totalVal).filter(v => v != null && v > 0);
+      if (tvVals.length > 0) {
+        const tvMax = Math.max(...tvVals);
+        const rawStep2 = tvMax / 4;
+        const se2 = Math.floor(Math.log10(Math.max(rawStep2, 0.001)));
+        const sb2 = Math.pow(10, se2);
+        const sf2 = rawStep2 / sb2;
+        const ts2 = (sf2 <= 1 ? 1 : sf2 <= 2 ? 2 : sf2 <= 5 ? 5 : 10) * sb2;
+        const nt2 = Math.ceil(tvMax / ts2);
+        const nm2 = ts2 * nt2;
+        const toY2 = v => MT + CH - Math.round((v / nm2) * CH);
+        const rightUnit = yUnit === "€" ? "ct" : "g";
+        rightAxisSvg =
+          Array.from({ length: nt2 + 1 }, (_, i) => {
+            const v = i * ts2;
+            const lbl = ts2 >= 1 ? Math.round(v) : v.toFixed(1);
+            return `<text x="${W - MR + 3}" y="${toY2(v) + 3}" text-anchor="start" font-size="6.5" fill="var(--secondary-text-color,#888)">${lbl}</text>`;
+          }).join("") +
+          `<text x="${W - MR + 3}" y="${MT - 8}" text-anchor="start" font-size="6.5" fill="var(--secondary-text-color,#888)">${rightUnit}</text>`;
+        const tvPts = [];
+        data.forEach((d, i) => {
+          if (d.totalVal == null || d.totalVal <= 0) return;
+          tvPts.push({ x: (barX0(i) + barX1(i)) / 2, y: toY2(d.totalVal) });
+        });
+        if (tvPts.length > 1) {
+          let pd = `M ${tvPts[0].x} ${tvPts[0].y}`;
+          for (let k = 1; k < tvPts.length; k++) {
+            const p = tvPts[k - 1], q = tvPts[k];
+            const mx = (p.x + q.x) / 2;
+            pd += ` C ${mx},${p.y} ${mx},${q.y} ${q.x},${q.y}`;
+          }
+          tvLineSvg = `<path d="${pd}" fill="none" stroke="var(--secondary-text-color,#888)" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>`;
+        }
+      }
+    }
+
+    // Legend for stacked charts
+    const legendGroups = data.find(d => d.segments?.length > 0)?.segments ?? [];
+    const legendHtml = legendGroups.length > 1
+      ? `<div class="evcc-chart-legend">${legendGroups.map(s =>
+          `<span class="ecl-item"><span class="ecl-dot" style="background:${s.color}"></span>${s.label}</span>`
+        ).join("")}</div>`
+      : "";
+
+    return `<div class="evcc-chart-wrap" data-yunit="${yUnit}">
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">
-        ${grid}${kwhLbl}${bars}
+        ${grid}${kwhLbl}${bars}${tvLineSvg}${rightAxisSvg}
       </svg>
       <div class="evcc-chart-tooltip" hidden></div>
+      ${legendHtml}
     </div>`;
   }
 
@@ -2374,7 +2586,7 @@ class EvccCard extends HTMLElement {
     const solar = val(solarId);
     const price = val(priceId);
 
-    const periodTKey = { "30d": "statsPeriod30d", "365d": "statsPeriod365d", "thisYear": "statsPeriodThisYear", "total": "statsPeriodTotal" }[period] ?? "statsPeriodTotal";
+    const periodTKey = { "month": "statsPeriodMonth", "year": "statsPeriodYear", "total": "statsPeriodTotal" }[period] ?? "statsPeriodTotal";
     const periodLabel = this._t(periodTKey);
 
     const items = [
@@ -2387,60 +2599,405 @@ class EvccCard extends HTMLElement {
     return `<div class="stats-footer"><div class="sf-period">${periodLabel}</div><div class="sf-items">${items.join('<span class="sf-sep"></span>')}</div></div>`;
   }
 
-  _renderStatsBlock() {
-    this._maybeRefreshStats();
-    const { kwhId, solarId, priceId } = this._getStatEntityIds();
+  // ── Sessions Mode (direct EVCC API) ──────────────────────────────────────
 
-    const val = id => id ? (parseFloat(stateVal(this._hass, id)) || 0) : null;
-    const kwh   = val(kwhId);
-    const solar = val(solarId);
-    const price = val(priceId);
+  async _detectEvccUrl() {
+    if (this._evccUrl !== undefined) return this._evccUrl;
+    try {
+      // hass-evcc stores the URL as the config entry's unique_id (set via async_set_unique_id(url))
+      // The EVCC site device stores configuration_url = base_url in the device registry
+      const devices = await this._hass.callWS({ type: "config/device_registry/list" });
+      const evccDev = devices.find(d =>
+        d.configuration_url &&
+        Array.isArray(d.identifiers) &&
+        d.identifiers.some(id => id[0] === "evcc")
+      );
+      this._evccUrl = evccDev?.configuration_url ?? null;
+    } catch(e) {
+      console.warn("[evcc-card] Could not detect EVCC URL:", e);
+      this._evccUrl = null;
+    }
+    return this._evccUrl;
+  }
+
+  async _fetchStatsData() {
+    const url = await this._detectEvccUrl();
+    if (!url) return;
+    if (Date.now() - this._statsFetchTime < 5 * 60 * 1000) return;
+    this._statsFetchTime = Date.now();
+    try {
+      const [stateResp, sessResp] = await Promise.all([
+        fetch(`${url}/api/state`),
+        fetch(`${url}/api/sessions`),
+      ]);
+      const state    = await stateResp.json();
+      const sessions = await sessResp.json();
+      this._statsData = state.statistics ?? null;
+      this._sessionsList  = Array.isArray(sessions) ? sessions : (sessions?.result ?? []);
+      this._buildStatsChartCache();
+      this._render();
+    } catch(e) {
+      console.warn("[evcc-card] sessions fetch error", e);
+    }
+  }
+
+  _buildStatsChartCache() {
+    const sessions = this._sessionsList;
+    if (!sessions?.length) return;
+    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
+    const now  = new Date();
+
+    const getDate    = s => new Date(s.created ?? s.start ?? 0);
+    const toDayKey   = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const toMonthKey = d => `${d.getFullYear()}-${d.getMonth()}`;
+    const toYearKey  = d => `${d.getFullYear()}`;
+
+    // Collect unique loadpoints and vehicles
+    const loadpoints  = [...new Set(sessions.map(s => s.loadpoint).filter(Boolean))];
+    const allVehicles = [...new Set(sessions.map(s => s.vehicle).filter(Boolean))];
+    const vehicles    = allVehicles.filter(v => !loadpoints.includes(v));
+    // Loadpoints that also appear as a vehicle name (e.g. heat pumps like WP)
+    const lpVehicles  = loadpoints.filter(lp => allVehicles.includes(lp));
+    this._statsLoadpoints = loadpoints;
+    this._statsVehicles   = vehicles;
+    this._statsLpVehicles = lpVehicles;
+
+    // All filter keys — include v: key for LP-vehicles so byFilter carries their data
+    const filterKeys = [
+      "total",
+      ...loadpoints.map(lp => `lp:${lp}`),
+      ...vehicles.map(v => `v:${v}`),
+      ...lpVehicles.map(v => `v:${v}`),
+    ];
+
+    const emptyBucket = () => ({ kwhTotal: 0, kwhSolar: 0, priceTotal: null, co2Total: null });
+
+    // Generic aggregation: group sessions by timeKeyFn, with per-filter breakdown
+    const aggregate = (timeKeyFn) => {
+      const byKey = {};
+      sessions.forEach(s => {
+        const d  = getDate(s);
+        const tk = timeKeyFn(d);
+        const kwh  = s.chargedEnergy ?? 0;
+        const solar = kwh * (s.solarPercentage ?? 0) / 100;
+        const price = s.price ?? null;
+        const co2pk = s.co2PerKwh ?? s.co2PerKWh ?? s.sessionCo2PerKWh ?? null;
+        const co2   = co2pk !== null ? kwh * co2pk : null;
+
+        const fKeys = ["total"];
+        if (s.loadpoint) fKeys.push(`lp:${s.loadpoint}`);
+        if (s.vehicle)   fKeys.push(`v:${s.vehicle}`);
+
+        if (!byKey[tk]) {
+          byKey[tk] = {};
+          filterKeys.forEach(fk => { byKey[tk][fk] = emptyBucket(); });
+        }
+        fKeys.forEach(fk => {
+          if (!byKey[tk][fk]) byKey[tk][fk] = emptyBucket();
+          byKey[tk][fk].kwhTotal  += kwh;
+          byKey[tk][fk].kwhSolar  += solar;
+          if (price !== null) byKey[tk][fk].priceTotal = (byKey[tk][fk].priceTotal ?? 0) + price;
+          if (co2   !== null) byKey[tk][fk].co2Total   = (byKey[tk][fk].co2Total   ?? 0) + co2;
+        });
+      });
+      return byKey;
+    };
+
+    const makeBucket = (timeData, key, label, labelStr, isCurrent) => {
+      const byFilter = {};
+      filterKeys.forEach(fk => { byFilter[fk] = timeData[key]?.[fk] ?? emptyBucket(); });
+      return { label, labelStr, isCurrent, byFilter };
+    };
+
+    // Store aggregations and helpers for on-demand period computation
+    const dailyData   = aggregate(toDayKey);
+    const monthlyData = aggregate(toMonthKey);
+    const dataYears = [...new Set(sessions.map(s => getDate(s).getFullYear()))].sort();
+    const yearlyData  = aggregate(toYearKey);
+    this._statsAgg = { dailyData, monthlyData, yearlyData, filterKeys, lang, makeBucket,
+      toDayKey, toMonthKey, dataYears };
+
+    // "total" – yearly, always at least 3 years (pad with empty bars if needed)
+    const fromYear = Math.min(dataYears[0] ?? now.getFullYear(), now.getFullYear() - 2);
+    const toYear   = Math.max(dataYears[dataYears.length - 1] ?? now.getFullYear(), now.getFullYear());
+    const allYears = [];
+    for (let y = fromYear; y <= toYear; y++) allYears.push(y);
+    this._statsChartCache["total"] = allYears.map(y => makeBucket(
+      yearlyData, String(y), new Date(y, 0, 1), String(y), y === now.getFullYear()));
+  }
+
+  _computeChartBuckets(period, offset) {
+    if (period === "total") return this._statsChartCache["total"] ?? null;
+    const agg = this._statsAgg;
+    if (!agg) return null;
+    const { dailyData, monthlyData, filterKeys, lang, makeBucket, toDayKey, toMonthKey } = agg;
+    const now = new Date();
+
+    if (period === "month") {
+      // Target month = now - offset months
+      const targetYear  = now.getFullYear() + Math.floor((now.getMonth() - offset) / 12);
+      const targetMonth = ((now.getMonth() - offset) % 12 + 12) % 12;
+      const targetYearAdj = new Date(now.getFullYear(), now.getMonth() - offset, 1).getFullYear();
+      const targetMonthAdj = new Date(now.getFullYear(), now.getMonth() - offset, 1).getMonth();
+      const daysInMonth = new Date(targetYearAdj, targetMonthAdj + 1, 0).getDate();
+      const isCurrentMonth = offset === 0;
+      const lastDay = isCurrentMonth ? now.getDate() : daysInMonth;
+      const buckets = [];
+      for (let d = 1; d <= lastDay; d++) {
+        const day = new Date(targetYearAdj, targetMonthAdj, d);
+        buckets.push(makeBucket(dailyData, toDayKey(day), day,
+          day.toLocaleDateString(lang, { day: "numeric", month: "numeric" }),
+          isCurrentMonth && d === now.getDate()));
+      }
+      return buckets;
+    }
+
+    if (period === "year") {
+      const targetYear = now.getFullYear() - offset;
+      const isCurrentYear = offset === 0;
+      const lastMonth = isCurrentYear ? now.getMonth() : 11;
+      const buckets = [];
+      for (let m = 0; m <= lastMonth; m++) {
+        const day = new Date(targetYear, m, 1);
+        buckets.push(makeBucket(monthlyData, toMonthKey(day), day,
+          day.toLocaleDateString(lang, { month: "short" }),
+          isCurrentYear && m === now.getMonth()));
+      }
+      return buckets;
+    }
+
+    return null;
+  }
+
+  _renderStatsBlock() {
+    // Trigger async data fetch (no-op if fresh)
+    this._fetchStatsData();
+
+    const period = this._statsPeriod ?? this._config.stats_period ?? "month";
+    const metric = this._statsMetric ?? "energy";
+    const filter = this._statsFilter ?? "total";
+    const offset = (period === "total") ? 0 : (this._statsOffset ?? 0);
+
+    if (this._evccUrl === null) {
+      return `<div class="loadpoint">
+        <div class="lp-header"><span class="lp-name">${_headerIcons.chartBar} ${this._config.title || this._t("statistics")}</span></div>
+        <div class="stats-no-data">${this._t("statsNoUrl")}</div>
+      </div>`;
+    }
+
+    // KPI computation
+    // Use apiStats only for current period (offset=0) total filter
+    const periodApiMap = { "month": "30d", "year": "thisYear", "total": "total" };
+    const apiPeriod = periodApiMap[period];
+    const apiStats = (offset === 0 && filter === "total" && apiPeriod) ? (this._statsData?.[apiPeriod] ?? null) : null;
+
+    // Compute chart buckets for this period+offset
+    const chartBuckets = this._computeChartBuckets(period, offset);
+    // For stacked views (loadpoints/vehicles), KPIs show the grand total
+    const kpiFilterKey = (filter === "loadpoints" || filter === "vehicles") ? "total" : filter;
+    const filterBuckets = chartBuckets?.map(b => b.byFilter?.[kpiFilterKey] ?? { kwhTotal: 0, kwhSolar: 0, priceTotal: null, co2Total: null });
+
+    const sumBuckets = (buckets) => {
+      if (!buckets?.length) return null;
+      let kwhTotal = 0, kwhSolar = 0, priceTotal = null, co2Total = null;
+      buckets.forEach(b => {
+        kwhTotal += b.kwhTotal ?? 0;
+        kwhSolar += b.kwhSolar ?? 0;
+        if (b.priceTotal !== null) priceTotal = (priceTotal ?? 0) + b.priceTotal;
+        if (b.co2Total   !== null) co2Total   = (co2Total   ?? 0) + b.co2Total;
+      });
+      return { kwhTotal, kwhSolar, priceTotal, co2Total };
+    };
+    const bucketSum = sumBuckets(filterBuckets);
+
+    let kwh, solar, avgPrice, avgCo2, totalCostEur, totalCo2g;
+    if (apiStats) {
+      kwh         = apiStats.chargedKWh      ?? null;
+      solar       = apiStats.solarPercentage ?? null;
+      avgPrice    = apiStats.avgPrice != null ? apiStats.avgPrice * 100 : null;  // €/kWh → ct/kWh
+      avgCo2      = apiStats.avgCo2          ?? null;  // g/kWh
+      totalCostEur = (kwh !== null && avgPrice !== null) ? kwh * avgPrice / 100 : null;
+      totalCo2g    = (kwh !== null && avgCo2   !== null) ? kwh * avgCo2         : null;
+    } else if (bucketSum) {
+      kwh          = bucketSum.kwhTotal  || null;
+      solar        = kwh ? (bucketSum.kwhSolar / kwh) * 100 : null;
+      totalCostEur = bucketSum.priceTotal;
+      avgPrice     = (totalCostEur !== null && kwh) ? (totalCostEur / kwh) * 100 : null;  // ct/kWh
+      totalCo2g    = bucketSum.co2Total;
+      avgCo2       = (totalCo2g !== null && kwh) ? totalCo2g / kwh : null;  // g/kWh
+    }
 
     const kpi = (v, label, fmt, color) => `
       <div class="stats-kpi">
-        <div class="stats-kpi-val"${color ? ` style="color:${color}"` : ""}>${v !== null ? fmt(v) : "–"}</div>
+        <div class="stats-kpi-val"${color ? ` style="color:${color}"` : ""}>${v !== null && v !== undefined ? fmt(v) : "–"}</div>
         <div class="stats-kpi-lbl">${label}</div>
       </div>`;
 
-    const kpis = [
-      kpi(kwh,   this._t("statsTotalCharged") || "Geladen gesamt", v => `${Math.round(v)} kWh`, null),
-      kpi(solar, this._t("statsSolarShare")   || "Solaranteil",    v => `${Math.round(v)} %`,   solar > 0 ? "var(--evcc-green)" : null),
-      kpi(price, this._t("statsAvgPrice")     || "Ø Preis/kWh",    v => `${(v * 100).toFixed(1)} ct`, null),
-    ].join("");
+    let kpis = "";
+    if (metric === "energy") {
+      kpis = [
+        kpi(kwh,      this._t("statsTotalCharged"), v => `${Math.round(v)} kWh`, null),
+        kpi(solar,    this._t("statsSolarShare"),   v => `${Math.round(v)} %`,   solar > 0 ? "var(--evcc-green)" : null),
+        kpi(avgPrice, this._t("statsAvgPrice"),     v => `${v.toFixed(1)} ct`,   null),
+      ].join("");
+    } else if (metric === "price") {
+      kpis = [
+        kpi(totalCostEur, this._t("statsTotalCost"),   v => `${v.toFixed(2)} €`,   null),
+        kpi(avgPrice,     this._t("statsAvgPrice"),    v => `${v.toFixed(1)} ct`,  null),
+        kpi(kwh,          this._t("statsTotalCharged"), v => `${Math.round(v)} kWh`, null),
+      ].join("");
+    } else if (metric === "co2") {
+      const co2kg = totalCo2g !== null ? totalCo2g / 1000 : null;
+      kpis = [
+        kpi(co2kg,  this._t("statsTotalCo2"),      v => `${v.toFixed(1)} kg`,     null),
+        kpi(avgCo2, this._t("statsAvgCo2"),         v => `${Math.round(v)} g/kWh`, null),
+        kpi(kwh,    this._t("statsTotalCharged"),  v => `${Math.round(v)} kWh`,   null),
+      ].join("");
+    }
 
-    const { kwhId: chartKwhId } = this._getStatEntityIds("total");
-    const period     = this._statsPeriod ?? "total";
-    const chartData  = this._chartCache[period];
-    const chartTitle = this._t({ "30d": "statsPeriod30d", "365d": "statsPeriod365d", "thisYear": "statsPeriodThisYear", "total": "statsPeriodTotal" }[period]);
-    const chart = chartKwhId ? `
-      <div class="stats-chart-section">
-        <div class="stats-chart-title">${chartTitle}</div>
-        ${chartData
-          ? this._renderBarChart(chartData)
-          : '<div class="stats-chart-loading">…</div>'}
-      </div>` : "";
+    // Period buttons (top-left)
+    const periodDefs = [
+      { key: "month", tKey: "statsPeriodMonth" },
+      { key: "year",  tKey: "statsPeriodYear"  },
+      { key: "total", tKey: "statsPeriodTotal" },
+    ];
+    const periodBtns = periodDefs.map(d =>
+      `<button class="stats-ctrl-btn${d.key === period ? " active" : ""}" data-period="${d.key}">${this._t(d.tKey)}</button>`
+    ).join("");
 
-    const noDataHint = (!kwhId && !solarId && !priceId && this._statsPeriod !== "total")
-      ? `<div class="stats-no-data">${this._t("statsNoData")} <a class="stats-no-data-link" href="https://github.com/mkshb/hass-evcc-card#enabling-stat-periods" target="_blank" rel="noopener">📖 ${this._t("statsNoDataLink") || "More info"}</a></div>`
-      : "";
-
-    const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
-    const solarHint = (this._solarDataPoints != null && this._solarDataPoints < 3)
-      ? `<div class="stats-solar-hint">${this._t("solarHint", { n: this._solarDataPoints })}</div>`
-      : "";
-
-    return `
-      <div>
-        <div class="lp-header">
-          <span class="lp-name">${this._config.title || this._t("statistics")}</span>
-        </div>
-        ${this._renderStatsPeriodTabs()}
-        ${noDataHint}
-        <div class="stats-kpi-row">${kpis}</div>
-        ${chart}
-        ${solarHint}
+    // Time navigation (top-right, month/year only)
+    let timeNavHtml = "";
+    if (period !== "total") {
+      const lang = (this._config?.language || this._hass?.language || "de").split("-")[0];
+      const now  = new Date();
+      const periodLabel = period === "month"
+        ? new Date(now.getFullYear(), now.getMonth() - offset, 1).toLocaleDateString(lang, { month: "long", year: "numeric" })
+        : String(now.getFullYear() - offset);
+      const minYear   = this._statsAgg?.dataYears?.[0] ?? (now.getFullYear() - 5);
+      const maxOffset = period === "month"
+        ? (now.getFullYear() - minYear) * 12 + now.getMonth()
+        : now.getFullYear() - minYear;
+      const svgL = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
+      const svgR = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
+      timeNavHtml = `<div class="stats-time-nav">
+        <button class="stn-btn" data-nav="prev" ${offset >= maxOffset ? "disabled" : ""}>${svgL}</button>
+        <span class="stn-label">${periodLabel}</span>
+        <button class="stn-btn" data-nav="next" ${offset === 0 ? "disabled" : ""}>${svgR}</button>
       </div>`;
+    }
+
+    // Metric buttons (bottom-left)
+    const metricDefs = [
+      { key: "energy", tKey: "statsMetricEnergy" },
+      { key: "price",  tKey: "statsMetricPrice"  },
+      { key: "co2",    tKey: "statsMetricCo2"    },
+    ];
+    const metricBtns = metricDefs.map(d =>
+      `<button class="stats-ctrl-btn${d.key === metric ? " active" : ""}" data-metric="${d.key}">${this._t(d.tKey)}</button>`
+    ).join("");
+
+    // Filter buttons: Gesamt / Ladepunkte / Fahrzeuge (no individual device names)
+    const hasLp = this._statsLoadpoints.length > 0;
+    const hasV  = this._statsVehicles.length > 0 || this._statsLpVehicles.length > 0;
+    const filterBtn = (key, label) =>
+      `<button class="stats-ctrl-btn${key === filter ? " active" : ""}" data-filter="${key}">${label}</button>`;
+    let filterBtns = filterBtn("total", this._t("statsFilterTotal"));
+    if (hasLp) filterBtns += filterBtn("loadpoints", this._t("statsFilterLoadpoints"));
+    if (hasV)  filterBtns += filterBtn("vehicles",   this._t("statsFilterVehicles"));
+    const filterBtnsHtml = (hasLp || hasV) ? `<div class="stats-filter-group">${filterBtns}</div>` : "";
+
+    // Stacking: driven by filter="loadpoints" or "vehicles"
+    const STACK_COLORS = ["var(--primary-color,#3b82f6)", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4"];
+    const stackGroups = filter === "loadpoints" ? this._statsLoadpoints
+                      : filter === "vehicles"   ? [...this._statsVehicles, ...this._statsLpVehicles]
+                      : [];
+    // Show segments+legend whenever a group filter is active (even for 1 group)
+    const isStacked = stackGroups.length > 0;
+
+    // Chart – transform buckets to {delta, solarDelta, totalVal, segments} by metric
+    const yUnit = metric === "energy" ? "kWh" : metric === "price" ? "€" : "kg";
+    const getFd  = (b, fk) => b.byFilter?.[fk] ?? { kwhTotal: 0, kwhSolar: 0, priceTotal: null, co2Total: null };
+    const metricVal = (fd) => {
+      if (metric === "energy") return fd.kwhTotal > 0 ? fd.kwhTotal : null;
+      if (metric === "price")  return fd.priceTotal != null ? fd.priceTotal : null;
+      return fd.co2Total != null ? fd.co2Total / 1000 : null;
+    };
+    const calcTotalVal = (fd) => {
+      if (metric === "price") return (fd.priceTotal != null && fd.kwhTotal > 0) ? (fd.priceTotal / fd.kwhTotal) * 100 : null;
+      if (metric === "co2")   return (fd.co2Total   != null && fd.kwhTotal > 0) ? fd.co2Total / fd.kwhTotal : null;
+      return null;
+    };
+    const chartData = chartBuckets?.map(b => {
+      const lpPrefix = filter === "loadpoints" ? "lp:" : filter === "vehicles" ? "v:" : null;
+      // For totalVal: use single group fd if only 1 group, else total
+      const tvFd = (isStacked && stackGroups.length === 1 && lpPrefix)
+        ? getFd(b, `${lpPrefix}${stackGroups[0]}`) : getFd(b, "total");
+      const fd   = getFd(b, "total");
+      let delta, solarDelta, totalVal;
+      if (metric === "energy") {
+        delta      = fd.kwhTotal > 0 ? fd.kwhTotal : null;
+        solarDelta = !isStacked && fd.kwhSolar > 0 ? fd.kwhSolar : null;
+        totalVal   = null;
+      } else if (metric === "price") {
+        delta    = fd.priceTotal;
+        totalVal = calcTotalVal(tvFd);
+        solarDelta = null;
+      } else {
+        delta    = fd.co2Total != null ? fd.co2Total / 1000 : null;
+        totalVal = calcTotalVal(tvFd);
+        solarDelta = null;
+      }
+      let segments = null;
+      if (isStacked && lpPrefix) {
+        segments = stackGroups.map((g, gi) => ({
+          label: g,
+          value: metricVal(getFd(b, `${lpPrefix}${g}`)),
+          color: STACK_COLORS[gi % STACK_COLORS.length],
+        }));
+        const segTotal = segments.reduce((s, seg) => s + (seg.value ?? 0), 0);
+        if (segTotal > 0) delta = segTotal;
+        solarDelta = null;
+      }
+      return { ...b, delta, solarDelta, totalVal, segments };
+    });
+
+    const chart = `<div class="stats-chart-section">
+      ${chartData ? this._renderBarChart(chartData, yUnit, metric !== "energy") : '<div class="stats-chart-loading">…</div>'}
+    </div>`;
+
+    // Build EVCC sessions link
+    const _now = new Date();
+    const _baseUrl = (this._evccUrl || "").replace(/\/$/, "");
+    let _sessionsUrl = "";
+    if (_baseUrl) {
+      if (period === "month") {
+        const _td = new Date(_now.getFullYear(), _now.getMonth() - offset, 1);
+        _sessionsUrl = `${_baseUrl}/#/sessions?period&month=${_td.getMonth() + 1}&year=${_td.getFullYear()}`;
+      } else if (period === "year") {
+        _sessionsUrl = `${_baseUrl}/#/sessions?period&year=${_now.getFullYear() - offset}`;
+      } else {
+        _sessionsUrl = `${_baseUrl}/#/sessions`;
+      }
+    }
+    const sessionsLinkHtml = _sessionsUrl
+      ? `<a href="${_sessionsUrl}" target="_blank" rel="noopener" class="stats-sessions-link" title="EVCC Statistik"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg></a>`
+      : "";
+
+    return `<div>
+      <div class="lp-header"><span class="lp-name">${_headerIcons.chartBar} ${this._config.title || this._t("statistics")}</span>${sessionsLinkHtml}</div>
+      <div class="stats-header-row">
+        <div class="stats-ctrl">${periodBtns}</div>
+        ${timeNavHtml}
+      </div>
+      <div class="stats-header-row">
+        <div class="stats-ctrl">${metricBtns}</div>
+        ${filterBtnsHtml}
+      </div>
+      <div class="stats-kpi-row">${kpis}</div>
+      ${chart}
+    </div>`;
   }
+
 
   _renderBatteryBlock(site) {
     const socId         = site.battery_soc;
@@ -2566,7 +3123,7 @@ class EvccCard extends HTMLElement {
     return `
       <div class="battery-block">
         <div class="lp-header">
-          <span class="lp-name">${this._config.title || this._t("homeBattery")}</span>
+          <span class="lp-name">${_headerIcons.battery} ${this._config.title || this._t("homeBattery")}</span>
         </div>
         ${tabUsage}
       </div>`;
@@ -2647,9 +3204,21 @@ class EvccCard extends HTMLElement {
       });
     });
 
-    this.shadowRoot.querySelectorAll("button.stats-period-tab").forEach(btn => {
+    this.shadowRoot.querySelectorAll("button.stats-ctrl-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        this._statsPeriod = btn.dataset.period;
+        if (btn.dataset.period) { this._statsPeriod = btn.dataset.period; this._statsOffset = 0; }
+        if (btn.dataset.metric) { this._statsMetric = btn.dataset.metric; }
+        if (btn.dataset.filter) { this._statsFilter = btn.dataset.filter; }
+        this._render();
+      });
+    });
+
+    this.shadowRoot.querySelectorAll("button.stn-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        const dir = btn.dataset.nav;
+        if (dir === "prev") this._statsOffset = (this._statsOffset ?? 0) + 1;
+        else if (dir === "next") this._statsOffset = Math.max(0, (this._statsOffset ?? 0) - 1);
         this._render();
       });
     });
@@ -2657,19 +3226,50 @@ class EvccCard extends HTMLElement {
     const chartWrap = this.shadowRoot.querySelector(".evcc-chart-wrap");
     if (chartWrap) {
       const tooltip = chartWrap.querySelector(".evcc-chart-tooltip");
+      const unit = chartWrap.dataset.yunit || "kWh";
       const showTooltip = (bar) => {
-        const total = bar.dataset.total;
+        const total    = bar.dataset.total;
         if (!total) { tooltip.hidden = true; return; }
-        const solar = bar.dataset.solar ? parseFloat(bar.dataset.solar) : null;
-        const grid  = solar != null ? (parseFloat(total) - solar).toFixed(1) : null;
+        const totalNum = parseFloat(total);
+        const solar    = bar.dataset.solar    ? parseFloat(bar.dataset.solar)    : null;
+        const grid     = solar != null        ? (totalNum - solar).toFixed(2)    : null;
+        const totalval = bar.dataset.totalval ? parseFloat(bar.dataset.totalval) : null;
         const dot = (color) => `<span class="ectt-dot" style="background:${color}"></span>`;
-        const solarColor = getComputedStyle(chartWrap).getPropertyValue("--evcc-green").trim() || "#22c55e";
-        const gridColor  = getComputedStyle(chartWrap).getPropertyValue("--primary-color").trim() || "#3b82f6";
-        tooltip.innerHTML =
-          `<div class="ectt-header">${bar.dataset.label}</div>` +
-          (solar != null ? `<div class="ectt-row">${dot(solarColor)}<span class="ectt-name">${this._t("solar")}</span><span class="ectt-val">${bar.dataset.solar} kWh</span></div>` : "") +
-          (grid  != null ? `<div class="ectt-row">${dot(gridColor)}<span class="ectt-name">${this._t("grid")}</span><span class="ectt-val">${grid} kWh</span></div>` : "") +
-          `<div class="ectt-summary">${total} kWh ${this._t("total")}</div>`;
+        const solarColor = getComputedStyle(chartWrap).getPropertyValue("--evcc-green").trim()          || "#22c55e";
+        const gridColor  = getComputedStyle(chartWrap).getPropertyValue("--primary-color").trim()       || "#3b82f6";
+        const avgColor   = getComputedStyle(chartWrap).getPropertyValue("--secondary-text-color").trim() || "#888";
+
+        let html = `<div class="ectt-header">${bar.dataset.label}</div>`;
+        if (bar.dataset.segs) {
+          // Stacked: per-segment breakdown + unit-specific detail
+          const segs = bar.dataset.segs.split("~").map(s => { const [l, v, c] = s.split("|"); return { label: l, value: v, color: c }; });
+          html += segs.filter(s => s.value).map(s =>
+            `<div class="ectt-row">${dot(s.color)}<span class="ectt-name">${s.label}</span><span class="ectt-val">${parseFloat(s.value).toFixed(2)} ${unit}</span></div>`
+          ).join("") + `<div class="ectt-summary">${totalNum.toFixed(2)} ${unit} ${this._t("total")}</div>`;
+          if (unit === "€" && totalval != null)
+            html += `<div class="ectt-row ectt-avg-row">${dot(avgColor)}<span class="ectt-name">Ø</span><span class="ectt-val">${totalval.toFixed(1)} ct/kWh</span></div>`;
+          if (unit === "kg" && totalval != null)
+            html += `<div class="ectt-row ectt-avg-row">${dot(avgColor)}<span class="ectt-name">Ø</span><span class="ectt-val">${Math.round(totalval)} g/kWh</span></div>`;
+        } else if (unit === "€") {
+          // Price: total € + ct/kWh rate
+          const intensity = totalval != null ? `${totalval.toFixed(1)} ct/kWh` : "–";
+          html +=
+            `<div class="ectt-summary">${totalNum.toFixed(2)} € ${this._t("total")}</div>` +
+            `<div class="ectt-row ectt-avg-row">${dot(avgColor)}<span class="ectt-name">Ø</span><span class="ectt-val">${intensity}</span></div>`;
+        } else if (unit === "kg") {
+          // CO2: total kg + g/kWh intensity
+          const intensity = totalval != null ? `${Math.round(totalval)} g/kWh` : "–";
+          html +=
+            `<div class="ectt-summary">${totalNum.toFixed(2)} kg CO₂ ${this._t("total")}</div>` +
+            `<div class="ectt-row ectt-avg-row">${dot(avgColor)}<span class="ectt-name">Ø</span><span class="ectt-val">${intensity}</span></div>`;
+        } else {
+          // Energy: solar / grid / total
+          html +=
+            (solar != null ? `<div class="ectt-row">${dot(solarColor)}<span class="ectt-name">${this._t("solar")}</span><span class="ectt-val">${bar.dataset.solar} ${unit}</span></div>` : "") +
+            (grid  != null ? `<div class="ectt-row">${dot(gridColor)}<span class="ectt-name">${this._t("grid")}</span><span class="ectt-val">${grid} ${unit}</span></div>` : "") +
+            `<div class="ectt-summary">${total} ${unit} ${this._t("total")}</div>`;
+        }
+        tooltip.innerHTML = html;
         const barRect  = bar.getBoundingClientRect();
         const wrapRect = chartWrap.getBoundingClientRect();
         const rawLeft  = barRect.left - wrapRect.left + barRect.width / 2;
@@ -2848,6 +3448,30 @@ class EvccCard extends HTMLElement {
       });
     });
 
+    this.shadowRoot.querySelectorAll("input.plan-energy-range").forEach(input => {
+      input.addEventListener("pointerdown", () => {
+        this._isDragging    = true;
+        this._pendingRender = false;
+      });
+      input.addEventListener("input", () => {
+        const lpName = input.dataset.lp;
+        const val    = parseFloat(input.value);
+        if (this._planState[lpName]) this._planState[lpName].energy = val;
+        const span = input.nextElementSibling;
+        if (span) span.textContent = `${val} kWh`;
+      });
+      input.addEventListener("pointerup", () => {
+        this._isDragging = false;
+        if (this._pendingRender) { this._pendingRender = false; this._render(); }
+      });
+      input.addEventListener("blur", () => {
+        if (this._isDragging) {
+          this._isDragging = false;
+          if (this._pendingRender) { this._pendingRender = false; this._render(); }
+        }
+      });
+    });
+
     this.shadowRoot.querySelectorAll("input.plan-time-input").forEach(input => {
       input.addEventListener("change", () => {
         const lpName = input.dataset.lp;
@@ -2870,10 +3494,30 @@ class EvccCard extends HTMLElement {
         if (this._planState[lpName]) {
           this._planState[lpName].vehicle = val;
           this._planState[lpName].soc     = null;
+          this._planState[lpName].energy  = null;
           this._planState[lpName].time    = null;
         }
         if (eid && this._hass) {
           this._hass.callService("select", "select_option", { entity_id: eid, option: val });
+        }
+      });
+    });
+
+    this.shadowRoot.querySelectorAll("button.plan-toggle").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const on     = btn.dataset.on === "true";
+        const domain = btn.dataset.domain;
+        this._hass.callService(domain, on ? "turn_off" : "turn_on", { entity_id: btn.dataset.entity });
+        btn.classList.toggle("on", !on);
+        btn.dataset.on = String(!on);
+        btn.textContent = !on ? this._t("planContinuousOn") : this._t("planContinuousOff");
+      });
+    });
+
+    this.shadowRoot.querySelectorAll("select.plan-precondition-select").forEach(sel => {
+      sel.addEventListener("change", () => {
+        if (this._hass) {
+          this._hass.callService("select", "select_option", { entity_id: sel.dataset.entity, option: sel.value });
         }
       });
     });
@@ -2887,49 +3531,39 @@ class EvccCard extends HTMLElement {
 
         if (!dtValue) { alert(this._t("noTimeAlert")); return; }
 
-        const showError = (msg) => {
-          const block = btn.closest(".plan-block");
-          if (!block) return;
-          let errEl = block.querySelector(".plan-error");
-          if (!errEl) {
-            errEl = document.createElement("div");
-            errEl.className = "plan-error";
-            block.querySelector(".plan-actions")?.after(errEl);
-          }
-          errEl.textContent = msg;
-        };
-        const showSuccess = () => {
-          const block = btn.closest(".plan-block");
-          if (!block) return;
-          const errEl = block.querySelector(".plan-error");
-          if (errEl) errEl.remove();
-          const badge = block.querySelector(".plan-badge");
-          if (badge) { badge.textContent = this._t("planned"); badge.classList.remove("active"); badge.classList.add("planned"); }
-        };
+        // DOM-Referenzen VOR dem await einsammeln (btn noch attached)
+        const vehicleTitle = (state.vehicle && state.vehicle !== "null" && state.vehicle !== "—") ? state.vehicle : null;
+        const vehicleSelectEl = btn.closest(".plan-block")?.querySelector("select.plan-vehicle-select");
+        const vehicleEntityId = vehicleSelectEl?.dataset?.entity;
+        const vehicleIdsAttr = vehicleEntityId ? (this._hass.states[vehicleEntityId]?.attributes?.vehicle_ids ?? {}) : {};
+        const vehicleDbId = vehicleTitle ? (vehicleIdsAttr[vehicleTitle] ?? null) : null;
+        const time = new Date(dtValue).toISOString();
+        const lpTitleVal = btn.dataset.lpTitle || lpName;
+        const energy = state.energy ?? 10;
 
-        const vehicleDbId = (state.vehicle && state.vehicle !== "null") ? state.vehicle : null;
-        const dt  = new Date(dtValue);
-        const pad = n => String(n).padStart(2, "0");
-        const startdate = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ` +
-                          `${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+        // Feedback via _planState persistieren — überlebt Re-Renders durch WS-Push
+        const setStatus = (status, msg = null) => {
+          this._planState[lpName] = { ...(this._planState[lpName] || {}), _status: status, _statusMsg: msg };
+          this._render();
+        };
 
         const tryServices = async () => {
           let lastErr = null;
           if (vehicleDbId) {
             try {
-              await this._hass.callService("evcc_intg", "set_vehicle_plan", { vehicle: vehicleDbId, soc, startdate });
+              await this._hass.callService("evcc", "set_vehicle_plan", { vehicle: vehicleDbId, soc, time });
               window.dispatchEvent(new CustomEvent("evcc-plan-reset", { detail: { lpName } }));
-              showSuccess();
+              setStatus("success");
               return;
             } catch(e) { lastErr = e; }
           }
           try {
-            await this._hass.callService("evcc_intg", "set_loadpoint_plan", { loadpoint: lpName, soc, startdate });
+            await this._hass.callService("evcc", "set_loadpoint_plan", { loadpoint: lpTitleVal, energy, time });
             window.dispatchEvent(new CustomEvent("evcc-plan-reset", { detail: { lpName } }));
-            showSuccess();
+            setStatus("success");
             return;
           } catch(e) { lastErr = e; }
-          showError(`❌ ${lastErr?.message || JSON.stringify(lastErr) || "Unknown error"}`);
+          setStatus("error", lastErr?.message || JSON.stringify(lastErr) || "Unknown error");
         };
         tryServices();
       });
@@ -2939,18 +3573,24 @@ class EvccCard extends HTMLElement {
       btn.addEventListener("click", () => {
         const lpName      = btn.dataset.lp;
         const planSt      = this._planState[lpName] || {};
-        const vehicleDbId = (planSt.vehicle && planSt.vehicle !== "null") ? planSt.vehicle : null;
+        const vehicleTitle = (planSt.vehicle && planSt.vehicle !== "null" && planSt.vehicle !== "—") ? planSt.vehicle : null;
+        const delVehicleSelectEl = btn.closest(".plan-block")?.querySelector("select.plan-vehicle-select");
+        const delVehicleEntityId = delVehicleSelectEl?.dataset?.entity;
+        const delVehicleIds = delVehicleEntityId ? (this._hass.states[delVehicleEntityId]?.attributes?.vehicle_ids ?? {}) : {};
+        const vehicleDbId = vehicleTitle ? (delVehicleIds[vehicleTitle] ?? null) : null;
         const block       = btn.closest(".plan-block");
+        const delLpTitle  = btn.dataset.lpTitle || lpName;
         const resetBadge  = () => {
           const badge = block?.querySelector(".plan-badge");
           if (badge) { badge.textContent = this._t("noPlan"); badge.classList.remove("active", "planned"); }
         };
         if (vehicleDbId) {
-          this._hass.callService("evcc_intg", "del_vehicle_plan", { vehicle: vehicleDbId })
+          this._hass.callService("evcc", "delete_vehicle_plan", { vehicle: vehicleDbId })
             .then(() => { resetBadge(); window.dispatchEvent(new CustomEvent("evcc-plan-reset", { detail: { lpName } })); })
             .catch(e => console.warn("[evcc-card] delete plan:", e));
         } else {
-          this._hass.callService("evcc_intg", "set_loadpoint_plan", { loadpoint: lpName, soc: 0, startdate: "" })
+          this._hass.callService("evcc", "delete_loadpoint_plan", { loadpoint: delLpTitle })
+            .then(() => { resetBadge(); window.dispatchEvent(new CustomEvent("evcc-plan-reset", { detail: { lpName } })); })
             .catch(e => console.warn("[evcc-card] delete plan:", e));
         }
       });
@@ -2962,7 +3602,7 @@ class EvccCard extends HTMLElement {
       });
     });
 
-    this.shadowRoot.querySelectorAll("input[type=range]:not(.plan-soc-range):not([data-boost-entity])").forEach(input => {
+    this.shadowRoot.querySelectorAll("input[type=range]:not(.plan-soc-range):not(.plan-energy-range):not([data-boost-entity])").forEach(input => {
       input.addEventListener("pointerdown", () => {
         this._isDragging    = true;
         this._pendingRender = false;
@@ -2993,6 +3633,49 @@ class EvccCard extends HTMLElement {
         }
       });
     });
+
+    // Priority drag & drop
+    let dragSrcLp = null;
+    this.shadowRoot.querySelectorAll(".priority-item").forEach(item => {
+      item.addEventListener("dragstart", () => {
+        dragSrcLp = item.dataset.lp;
+        item.classList.add("dragging");
+      });
+      item.addEventListener("dragend", () => item.classList.remove("dragging"));
+      item.addEventListener("dragover", e => {
+        e.preventDefault();
+        this.shadowRoot.querySelectorAll(".priority-item").forEach(i => i.classList.remove("drag-over"));
+        item.classList.add("drag-over");
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("drag-over"));
+      item.addEventListener("drop", e => {
+        e.preventDefault();
+        item.classList.remove("drag-over");
+        if (!dragSrcLp || dragSrcLp === item.dataset.lp) return;
+        const arr     = [...this._priorityOrder];
+        const fromIdx = arr.indexOf(dragSrcLp);
+        const toIdx   = arr.indexOf(item.dataset.lp);
+        arr.splice(fromIdx, 1);
+        arr.splice(toIdx, 0, dragSrcLp);
+        this._priorityOrder = arr;
+        this._render();
+      });
+    });
+
+    const saveBtn = this.shadowRoot.querySelector(".priority-save-btn");
+    if (saveBtn) {
+      saveBtn.addEventListener("click", async () => {
+        const titles = this._priorityOrder.map(lpName => {
+          const ents = this._cachedEntities?.loadpoints?.[lpName] || {};
+          return this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        });
+        await this._hass.callService("evcc", "set_loadpoint_priorities", { order: titles });
+        const orig = saveBtn.textContent;
+        saveBtn.textContent = "✓ " + this._t("prioritySaved");
+        saveBtn.disabled = true;
+        setTimeout(() => { saveBtn.textContent = orig; saveBtn.disabled = false; }, 2000);
+      });
+    }
   }
 
   _styles() {
@@ -3035,6 +3718,12 @@ class EvccCard extends HTMLElement {
       .lp-badge.charging  { color: var(--evcc-green);  background: color-mix(in srgb, var(--evcc-green)  15%, transparent); }
       .lp-badge.connected { color: var(--evcc-blue);   background: color-mix(in srgb, var(--evcc-blue)   15%, transparent); }
       .lp-badge.ready     { color: var(--evcc-gray);   background: color-mix(in srgb, var(--evcc-gray)   15%, transparent); }
+      .lp-badge.heating   { color: var(--evcc-amber);  background: color-mix(in srgb, var(--evcc-amber)  15%, transparent); }
+      .lp-badge.idle      { color: var(--evcc-gray);   background: color-mix(in srgb, var(--evcc-gray)   15%, transparent); }
+
+      .temp-display { text-align: center; padding: 8px 0 16px; }
+      .temp-current { font-size: 3rem; font-weight: 700; line-height: 1; transition: color .3s; }
+      .temp-target-label { font-size: .85rem; color: var(--secondary-text-color); margin-top: 6px; }
 
       .mode-row { display: flex; gap: 6px; margin-bottom: 12px; }
       .mode-btn {
@@ -3076,6 +3765,7 @@ class EvccCard extends HTMLElement {
 
       .power-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 12px; color: var(--secondary-text-color); flex-wrap: wrap; }
       .power-row.charging { color: #22c55e; }
+      .power-row.heating  { color: var(--evcc-amber); }
       .power-value { font-size: 1.6rem; font-weight: 700; }
       .power-sep { font-size: .8rem; color: var(--secondary-text-color); align-self: flex-end; padding-bottom: .2rem; }
       .power-current { font-size: .82rem; align-self: flex-end; padding-bottom: .2rem; }
@@ -3231,15 +3921,52 @@ class EvccCard extends HTMLElement {
       .s2-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
       .s2-chip-sub { font-size: .62rem; color: var(--secondary-text-color); font-weight: 400; }
 
-      .stats-period-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
-      .stats-period-tab {
-        padding: 2px 10px; border-radius: 999px;
-        border: 1px solid var(--divider-color, #e5e7eb);
-        background: transparent; color: var(--secondary-text-color);
-        cursor: pointer; font-size: .72rem; font-weight: 600; transition: all .15s;
+      /* ── Stats Header Layout ── */
+      .stats-header-row {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 8px; margin-bottom: 4px;
       }
-      .stats-period-tab.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
-      .stats-period-tabs--small .stats-period-tab { font-size: .65rem; padding: 1px 8px; }
+      .stats-ctrl {
+        display: flex; align-items: center; gap: 1px; flex-shrink: 0;
+      }
+      .stats-ctrl-btn {
+        padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+        border: none; background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer; font-size: .68rem; font-weight: 600;
+        transition: background .12s, color .12s; white-space: nowrap;
+      }
+      .stats-ctrl-btn:hover { background: var(--secondary-background-color, rgba(128,128,128,.1)); }
+      .stats-ctrl-btn.active {
+        background: var(--secondary-background-color, rgba(128,128,128,.12));
+        color: var(--primary-color);
+      }
+
+      /* Zeit-Navigation */
+      .stats-time-nav { display: flex; align-items: center; gap: 1px; }
+      .stn-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
+        border: none; background: transparent; color: var(--secondary-text-color);
+        cursor: pointer; transition: background .12s; padding: 0;
+      }
+      .stn-btn:hover:not([disabled]) { background: var(--secondary-background-color, rgba(128,128,128,.1)); }
+      .stn-btn[disabled] { opacity: 0.3; cursor: default; }
+      .stats-sessions-link { display: flex; align-items: center; color: var(--secondary-text-color); opacity: 0.6; text-decoration: none; flex-shrink: 0; }
+      .stats-sessions-link:hover { opacity: 1; color: var(--primary-color); }
+      .stn-label {
+        font-size: .68rem; font-weight: 600; color: var(--primary-text-color);
+        white-space: nowrap; padding: 0 2px;
+      }
+
+      /* Filter-Gruppe (rechts unten) */
+      .stats-filter-group {
+        display: flex; align-items: center; gap: 1px;
+        overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+      }
+      .stats-filter-group::-webkit-scrollbar { display: none; }
+      .sfb-sep { width: 1px; height: 12px; background: var(--divider-color, rgba(128,128,128,.3)); flex-shrink: 0; margin: 0 2px; }
+      .sfb-group-icon { display: flex; align-items: center; color: var(--secondary-text-color); opacity: 0.45; flex-shrink: 0; }
 
       .stats-footer-wrap {
         border-top: 1px solid var(--divider-color, #333);
@@ -3297,6 +4024,10 @@ class EvccCard extends HTMLElement {
       .ectt-name { flex: 1; color: var(--primary-text-color); }
       .ectt-val { font-weight: 600; margin-left: 12px; }
       .ectt-summary { margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--divider-color, #374151); font-weight: 700; }
+      .ectt-avg-row { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--divider-color, rgba(128,128,128,.2)); opacity: 0.8; }
+      .evcc-chart-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; margin-top: 4px; }
+      .ecl-item { display: flex; align-items: center; gap: 4px; font-size: .65rem; color: var(--secondary-text-color); }
+      .ecl-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
       .stats-chart-title {
         font-size: .58rem; font-weight: 700; letter-spacing: .12em;
         text-transform: uppercase; color: var(--secondary-text-color); opacity: .55; margin-bottom: 8px;
@@ -3369,9 +4100,13 @@ class EvccCard extends HTMLElement {
       .plan-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
       .plan-row { display: flex; align-items: center; gap: 8px; font-size: .83rem; flex-wrap: wrap; }
       .plan-row label { flex: 0 0 auto; min-width: 60px; white-space: nowrap; color: var(--secondary-text-color); }
+      .plan-row-group { display: flex; gap: 12px; }
+      .plan-row-group .plan-row { flex: 1; min-width: 0; }
       .plan-soc-control { display: flex; align-items: center; gap: 8px; flex: 1; }
       .plan-soc-range { flex: 1; accent-color: var(--primary-color); }
       .plan-soc-val { width: 42px; text-align: right; font-size: .8rem; }
+      .plan-energy-range { flex: 1; accent-color: var(--primary-color); }
+      .plan-energy-val { width: 52px; text-align: right; font-size: .8rem; }
       input.plan-time-input { flex: 1; padding: 4px 8px; border: 1px solid var(--divider-color, #4b5563); border-radius: 6px; background: var(--card-background-color); color: var(--primary-text-color); font-size: .82rem; color-scheme: dark light; }
       .plan-actions { display: flex; gap: 8px; }
       .plan-btn { flex: 1; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--divider-color); font-size: .8rem; font-weight: 600; cursor: pointer; transition: all .15s; background: transparent; color: var(--primary-text-color); }
@@ -3379,7 +4114,10 @@ class EvccCard extends HTMLElement {
       .plan-btn.save:hover { filter: brightness(1.1); }
       .plan-btn.delete { color: #ef4444; border-color: #ef444466; }
       .plan-btn.delete:hover { background: #ef444422; }
-      select.plan-vehicle-select { flex: 1; padding: 4px 8px; border: 1px solid var(--divider-color, #4b5563); border-radius: 6px; background: var(--card-background-color); color: var(--primary-text-color); font-size: .82rem; }
+      select.plan-vehicle-select, select.plan-precondition-select { flex: 1; padding: 4px 8px; border: 1px solid var(--divider-color, #4b5563); border-radius: 6px; background: var(--card-background-color); color: var(--primary-text-color); font-size: .82rem; }
+      select.plan-precondition-select { flex: 0 0 auto; min-width: 90px; }
+      .plan-toggle { padding: 3px 12px; border-radius: 999px; border: 1px solid var(--divider-color); font-size: .78rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--secondary-text-color); transition: all .15s; }
+      .plan-toggle.on { background: color-mix(in srgb, var(--evcc-green) 15%, transparent); color: var(--evcc-green); border-color: var(--evcc-green); }
       .plan-error { margin-top: 8px; padding: 6px 10px; border-radius: 6px; background: #ef444422; color: #ef4444; font-size: .78rem; word-break: break-all; }
 
       .empty { text-align: center; padding: 24px; color: var(--secondary-text-color); font-size: .9rem; line-height: 1.8; }
@@ -3402,6 +4140,34 @@ class EvccCard extends HTMLElement {
       .compact-panel[hidden] { display: none; }
       .compact-panel .plan-block,
       .compact-panel .session-block { border-top: none; margin-top: 0; padding-top: 0; }
+
+      /* --- Priority Mode --- */
+      .priority-mode { padding: 8px 0; }
+      .priority-hint { font-size: .8rem; color: var(--secondary-text-color); margin-bottom: 12px; }
+      .priority-list { display: flex; flex-direction: column; gap: 6px; }
+      .priority-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 8px;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        cursor: grab; user-select: none;
+      }
+      .priority-item.dragging { opacity: .4; }
+      .priority-item.drag-over { border-color: var(--primary-color); }
+      .drag-handle { font-size: 1.2rem; color: var(--secondary-text-color); cursor: grab; }
+      .priority-badge {
+        width: 22px; height: 22px; border-radius: 50%;
+        background: var(--primary-color); color: var(--text-primary-color);
+        display: flex; align-items: center; justify-content: center;
+        font-size: .75rem; font-weight: bold; flex-shrink: 0;
+      }
+      .priority-title { flex: 1; font-weight: 500; }
+      .priority-type { color: var(--secondary-text-color); font-size: .8rem; }
+      .priority-actions { margin-top: 14px; text-align: right; }
+      .priority-save-btn {
+        padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer;
+        background: var(--primary-color); color: var(--text-primary-color); font-size: .9rem;
+      }
     `;
   }
 }
@@ -3449,7 +4215,15 @@ class EvccCardEditor extends HTMLElement {
     if (!this._hass) return;
     const prefix = this._getPrefix();
     const { loadpoints } = discoverEntities(this._hass, prefix);
-    this._availableLoadpoints = Object.keys(loadpoints).sort();
+    const SITE_PREFIXES = /^(battery|grid|pv|home)(_|$)/;
+    const allLps = Object.entries(loadpoints).filter(([k]) => !SITE_PREFIXES.test(k));
+
+    const isHeater = ([, ents]) =>
+      ents.charger_feature_heating && isOn(this._hass, ents.charger_feature_heating);
+
+    this._heatingLoadpoints = allLps.filter(isHeater).map(([k]) => k).sort();
+    this._chargerLoadpoints = allLps.filter(e => !isHeater(e)).map(([k]) => k).sort();
+    this._availableLoadpoints = allLps.map(([k]) => k).sort();
   }
 
   _esc(str) {
@@ -3472,13 +4246,25 @@ class EvccCardEditor extends HTMLElement {
     </select>`;
   }
 
+  _lpDisplayName(lp) {
+    const prefix = this._getPrefix();
+    const modeEntity = `select.${prefix}${lp}_mode`;
+    const title = this._hass?.states[modeEntity]?.attributes?.loadpoint_title;
+    return (title || lp).toUpperCase();
+  }
+
   _checkboxes(type, selected) {
-    const lps = this._availableLoadpoints;
-    if (lps.length === 0) return `<div class="hint">Keine Ladepunkte gefunden</div>`;
+    const mode = this._config.mode || "loadpoint";
+    const lps = mode === "heating"
+      ? this._heatingLoadpoints
+      : ["loadpoint", "compact"].includes(mode)
+        ? this._chargerLoadpoints
+        : this._availableLoadpoints;
+    if (!lps || lps.length === 0) return `<div class="hint">Keine Ladepunkte gefunden</div>`;
     return lps.map(lp => `
       <label class="cb-row">
         <input type="checkbox" data-field="${type}" data-lp="${this._esc(lp)}" ${selected.includes(lp) ? "checked" : ""}>
-        <span>${this._esc(lp)}</span>
+        <span>${this._esc(this._lpDisplayName(lp))}</span>
       </label>
     `).join("");
   }
@@ -3489,9 +4275,10 @@ class EvccCardEditor extends HTMLElement {
     const selLps = Array.isArray(c.loadpoints) ? c.loadpoints : [];
     const noPlan  = Array.isArray(c.no_plan)   ? c.no_plan   : [];
 
-    const showLoadpoints    = ["loadpoint", "compact", "plan"].includes(mode);
+    const showLoadpoints    = ["loadpoint", "compact", "plan", "heating", "priority"].includes(mode);
     const showNoPlan        = ["loadpoint", "compact"].includes(mode);
-    const showChargeCurrent = ["loadpoint", "compact"].includes(mode);
+    const showChargeCurrent = ["loadpoint", "compact", "heating"].includes(mode);
+    const showHeatingOpts   = mode === "heating";
     const showSiteDetails   = ["site", "flow"].includes(mode);
     const showStatsPeriod   = ["stats", "site", "flow", "grid"].includes(mode);
 
@@ -3504,6 +4291,7 @@ class EvccCardEditor extends HTMLElement {
       grid:      "Standard: Netz",
       stats:     "Standard: Statistik",
       battery:   "Standard: Hausbatterie",
+      heating:   "Standard: Ladepunkt-Name",
     }[mode] || "Standard: Ladepoint-Name";
 
     this.shadowRoot.innerHTML = `
@@ -3537,6 +4325,8 @@ class EvccCardEditor extends HTMLElement {
             ["battery",   "Batterie (battery)"],
             ["stats",     "Statistik (stats)"],
             ["plan",      "Plan (plan)"],
+            ["heating",   "Heizgerät (heating)"],
+            ["priority",  "Priorität (priority)"],
           ], mode)}
         </div>
         <div class="field">
@@ -3579,6 +4369,22 @@ class EvccCardEditor extends HTMLElement {
           ], c.charge_current_settings || "collapsed")}
         </div>
         ` : ""}
+        ${showHeatingOpts ? `
+        <div class="field">
+          <label class="field-label" for="target_temp_min">Zieltemperatur Minimum <span class="hint" style="display:inline">(optional)</span></label>
+          <input id="target_temp_min" class="ha-input" type="number" placeholder="z.B. 20" value="${c.target_temp_min != null ? c.target_temp_min : ""}">
+        </div>
+        <div class="field">
+          <label class="field-label" for="target_temp_max">Zieltemperatur Maximum <span class="hint" style="display:inline">(optional)</span></label>
+          <input id="target_temp_max" class="ha-input" type="number" placeholder="z.B. 70" value="${c.target_temp_max != null ? c.target_temp_max : ""}">
+        </div>
+        <div class="field">
+          <label class="cb-row">
+            <input id="show_session_energy" type="checkbox" ${c.show_session_energy ? "checked" : ""}>
+            <span>Session-Energie anzeigen</span>
+          </label>
+        </div>
+        ` : ""}
         ${showSiteDetails ? `
         <div class="field">
           <label class="field-label" for="site_details">Site-Details</label>
@@ -3592,11 +4398,9 @@ class EvccCardEditor extends HTMLElement {
         <div class="field">
           <label class="field-label" for="stats_period">Statistik-Zeitraum</label>
           ${this._sel("stats_period", [
-            ["total",    "Gesamt"],
-            ["30d",      "30 Tage"],
-            ["365d",     "365 Tage"],
-            ["thisYear", "Dieses Jahr"],
-            ["none",     "Keiner"],
+            ["month",  "Monat"],
+            ["year",   "Jahr"],
+            ["total",  "Gesamt"],
           ], c.stats_period || "total")}
         </div>
         ` : ""}
@@ -3626,7 +4430,24 @@ class EvccCardEditor extends HTMLElement {
       });
     }
 
-    this.shadowRoot.querySelectorAll("input[type=checkbox]").forEach(cb => {
+
+    // Heating-specific fields
+    ["target_temp_min", "target_temp_max"].forEach(id => {
+      const el = this.shadowRoot.getElementById(id);
+      if (el) el.addEventListener("change", () => {
+        const v = el.value !== "" ? parseFloat(el.value) : undefined;
+        this._config = { ...this._config, [id]: (v != null && !isNaN(v)) ? v : undefined };
+        this._fire();
+      });
+    });
+
+    const sessionCb = this.shadowRoot.getElementById("show_session_energy");
+    if (sessionCb) sessionCb.addEventListener("change", () => {
+      this._config = { ...this._config, show_session_energy: sessionCb.checked || undefined };
+      this._fire();
+    });
+
+    this.shadowRoot.querySelectorAll("input[type=checkbox][data-field]").forEach(cb => {
       cb.addEventListener("change", () => {
         const field = cb.dataset.field;
         const lp    = cb.dataset.lp;
@@ -3645,6 +4466,7 @@ class EvccCardEditor extends HTMLElement {
 }
 
 customElements.define("evcc-card-editor", EvccCardEditor);
+
 customElements.define("evcc-card", EvccCard);
 window.__evccCards = window.__evccCards || new Map();
 
@@ -3695,4 +4517,4 @@ window.customCards.push({
   description: "Dashboard card for ha-evcc integration.",
   preview:     false,
   version:     EVCC_CARD_VERSION,
-}); 
+});
