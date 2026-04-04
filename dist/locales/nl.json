@@ -50,6 +50,7 @@
   "battBoostTitle": "Voertuig laden met hulp van de thuisbatterij",
   "battBoostDesc": "wanneer de thuisbatterij boven {val} is.",
   "battBufferStartDesc": "Start automatisch {val}.",
+  "battBufferStartSocAt": "wanneer op {val} %",
   "battBufferStartSocZero": "alleen met voldoende PV-overschot",
   "battCarPrioTitle": "Geef prioriteit aan voertuigladen,",
   "battCarPrioDesc": "wanneer de thuisbatterij boven {val} is.",

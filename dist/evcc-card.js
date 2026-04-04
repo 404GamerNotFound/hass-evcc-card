@@ -2521,16 +2521,17 @@ class EvccCard extends HTMLElement {
     const bufferVal        = getVal(bufferSocId);
     const bufferStartVal   = getVal(bufferStartSocId);
 
-    const inlineSlider = (entityId, val, label) => {
-      if (!entityId || val === null) return "";
-      const opts = getOpts(entityId);
-      const min  = opts[0] ?? 0;
-      const max  = opts[opts.length - 1] ?? 100;
-      const step = opts.length > 1 ? opts[1] - opts[0] : 5;
-      return `<span class="batt-inline-val"
-                    data-batt-inline="${entityId}"
-                    data-min="${min}" data-max="${max}" data-step="${step}"
-                    data-val="${val}">${label ?? `${val} %`}</span>`;
+    const bufferSocOpts      = getOpts(bufferSocId).filter(o => (priorityVal === null || o >= priorityVal) && (bufferStartVal === null || bufferStartVal === 0 || o <= bufferStartVal));
+    const bufferStartSocOpts = getOpts(bufferStartSocId).filter(o => o === 0 || bufferVal === null || o >= bufferVal);
+    const prioritySocOpts    = getOpts(prioritySocId).filter(o => bufferVal === null || o <= bufferVal);
+    const bufferStartLabel   = o => o === 0 ? this._t("battBufferStartSocZero") : this._t("battBufferStartSocAt", { val: o });
+
+    const inlineSelect = (entityId, val, filteredOpts, labelFn) => {
+      if (!entityId || val === null || !filteredOpts.length) return "";
+      const options = filteredOpts.map(o =>
+        `<option value="${o}"${o === val ? " selected" : ""}>${labelFn ? labelFn(o) : `${o} %`}</option>`
+      ).join("");
+      return `<select class="batt-inline-select" data-entity="${entityId}">${options}</select>`;
     };
 
     const splitPct    = priorityVal ?? 0;
@@ -2587,8 +2588,8 @@ class EvccCard extends HTMLElement {
               <span class="batt-text-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="fill:var(--evcc-bolt)"><path d="M11 15H6L13 1V9H18L11 23V15Z"/></svg></span>
               <div>
                 <div class="batt-text-title">${this._t("battBoostTitle")}</div>
-                <div class="batt-text-desc">${this._t("battBoostDesc", { val: inlineSlider(bufferSocId, bufferVal) })}</div>
-                ${bufferStartSocId ? `<div class="batt-text-desc">${this._t("battBufferStartDesc", { val: inlineSlider(bufferStartSocId, bufferStartVal, bufferStartVal === 0 ? this._t("battBufferStartSocZero") : `${bufferStartVal} %`) })}</div>` : ""}
+                <div class="batt-text-desc">${this._t("battBoostDesc", { val: inlineSelect(bufferSocId, bufferVal, bufferSocOpts) })}</div>
+                ${bufferStartSocId ? `<div class="batt-text-desc">${this._t("battBufferStartDesc", { val: inlineSelect(bufferStartSocId, bufferStartVal, bufferStartSocOpts, bufferStartLabel) })}</div>` : ""}
               </div>
             </div>` : ""}
             ${prioritySocId ? `
@@ -2596,14 +2597,14 @@ class EvccCard extends HTMLElement {
               <span class="batt-text-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="fill:var(--evcc-blue)"><path d="M16,6L19,10H5L8,6H16M16,4H8L3,10V16H5V18H8V16H16V18H19V16H21V10L16,4M7,12A1,1 0 0,1 8,11A1,1 0 0,1 9,12A1,1 0 0,1 8,13A1,1 0 0,1 7,12M15,12A1,1 0 0,1 16,11A1,1 0 0,1 17,12A1,1 0 0,1 16,13A1,1 0 0,1 15,12Z"/></svg></span>
               <div>
                 <div class="batt-text-title">${this._t("battCarPrioTitle")}</div>
-                <div class="batt-text-desc">${this._t("battCarPrioDesc", { val: inlineSlider(prioritySocId, priorityVal) })}</div>
+                <div class="batt-text-desc">${this._t("battCarPrioDesc", { val: inlineSelect(prioritySocId, priorityVal, prioritySocOpts) })}</div>
               </div>
             </div>
             <div class="batt-text-item">
               <span class="batt-text-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="var(--secondary-text-color)"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/></svg></span>
               <div>
                 <div class="batt-text-title">${this._t("battHomePrioTitle")}</div>
-                <div class="batt-text-desc">${this._t("battHomePrioDesc", { val: inlineSlider(prioritySocId, priorityVal) })}</div>
+                <div class="batt-text-desc">${this._t("battHomePrioDesc", { val: inlineSelect(prioritySocId, priorityVal, prioritySocOpts) })}</div>
               </div>
             </div>` : ""}
           </div>
@@ -2614,10 +2615,6 @@ class EvccCard extends HTMLElement {
           </div>
         </div>
         ${dischargeHtml}
-        <div class="batt-inline-popup" hidden>
-          <input type="range" class="batt-inline-input" />
-          <span class="batt-inline-label"></span>
-        </div>
       </div>`;
 
     return `
@@ -2777,60 +2774,15 @@ class EvccCard extends HTMLElement {
       });
     });
 
-    this.shadowRoot.querySelectorAll(".batt-inline-val").forEach(span => {
-      span.addEventListener("click", () => {
-        const container = span.closest(".batt-usage-content");
-        if (!container) return;
-        const popup    = container.querySelector(".batt-inline-popup");
-        if (!popup) return;
-        const input    = popup.querySelector(".batt-inline-input");
-        const label    = popup.querySelector(".batt-inline-label");
-        const entityId = span.dataset.battInline;
-        input.min   = span.dataset.min;
-        input.max   = span.dataset.max;
-        input.step  = span.dataset.step;
-        input.value = span.dataset.val;
-        label.textContent = `${span.dataset.val} %`;
-        input.dataset.entity = entityId;
-        popup.removeAttribute("hidden");
-      });
-      span.addEventListener("click", e => e.stopPropagation());
-    });
-
-    this.shadowRoot.querySelectorAll(".batt-inline-input").forEach(input => {
-      input.addEventListener("pointerdown", () => { this._isDragging = true; });
-      input.addEventListener("input", () => {
-        const popup = input.closest(".batt-inline-popup");
-        const label = popup?.querySelector(".batt-inline-label");
-        label.textContent = `${input.value} %`;
-        this.shadowRoot.querySelectorAll(`.batt-inline-val[data-batt-inline="${input.dataset.entity}"]`)
-          .forEach(s => { s.textContent = `${input.value} %`; s.dataset.val = input.value; });
-      });
-      input.addEventListener("pointerup", () => {
-        this._isDragging = false;
-        const opts = (attr(this._hass, input.dataset.entity, "options") ?? [])
-          .map(o => parseFloat(o)).filter(o => !isNaN(o));
-        const val     = parseFloat(input.value);
-        const nearest = opts.length
-          ? opts.reduce((p, c) => Math.abs(c - val) < Math.abs(p - val) ? c : p, opts[0])
-          : val;
+    this.shadowRoot.querySelectorAll(".batt-inline-select").forEach(sel => {
+      sel.addEventListener("change", () => {
         this._hass.callService("select", "select_option", {
-          entity_id: input.dataset.entity,
-          option:    String(nearest),
+          entity_id: sel.dataset.entity,
+          option:    sel.value,
         });
       });
+      sel.addEventListener("click", e => e.stopPropagation());
     });
-
-    const cardContent = this.shadowRoot.querySelector(".card-content");
-    if (cardContent) {
-      cardContent.addEventListener("click", (e) => {
-        this.shadowRoot.querySelectorAll(".batt-inline-popup").forEach(p => p.setAttribute("hidden", ""));
-      });
-    } else {
-      this.shadowRoot.addEventListener("click", () => {
-        this.shadowRoot.querySelectorAll(".batt-inline-popup").forEach(p => p.setAttribute("hidden", ""));
-      }, { capture: true });
-    }
 
     this.shadowRoot.querySelectorAll("button.mode-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -3384,7 +3336,7 @@ class EvccCard extends HTMLElement {
       .batt-text-icon { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
       .batt-text-title { font-size: .82rem; font-weight: 600; margin-bottom: 2px; }
       .batt-text-desc  { font-size: .76rem; color: var(--secondary-text-color); line-height: 1.4; }
-      .batt-inline-val { color: var(--primary-color, #00b4d8); text-decoration: underline dotted; cursor: pointer; font-weight: 600; white-space: nowrap; }
+      .batt-inline-select { color: var(--primary-color, #00b4d8); font-weight: 600; font-size: .76rem; font-family: inherit; background: transparent; border: none; border-bottom: 1px dotted var(--primary-color, #00b4d8); cursor: pointer; padding: 0 2px; outline: none; appearance: none; -webkit-appearance: none; }
       .batt-visual-col { display: flex; align-items: flex-start; gap: 10px; flex-shrink: 0; align-self: flex-start; }
       .batt-marker-top { display: none; }
       .batt-visual { display: flex; flex-direction: column; align-items: center; width: 56px; }
@@ -3405,10 +3357,6 @@ class EvccCard extends HTMLElement {
       .batt-discharge-toggle.on { background: var(--primary-color, #00b4d8); }
       .batt-toggle-knob { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: left .2s; }
       .batt-discharge-toggle.on .batt-toggle-knob { left: 21px; }
-      .batt-inline-popup { display: flex; align-items: center; gap: 8px; background: var(--card-background-color, #1c1c1e); border: 1px solid var(--divider-color, #333); border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
-      .batt-inline-popup[hidden] { display: none; }
-      .batt-inline-input { flex: 1; }
-      .batt-inline-label { font-size: .84rem; font-weight: 600; min-width: 44px; text-align: right; }
 
       .session-block { border-top: 1px solid var(--divider-color, #e5e7eb); margin-top: 10px; padding-top: 10px; }
       .session-title { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--secondary-text-color); margin-bottom: 8px; }
