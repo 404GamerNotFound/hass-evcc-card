@@ -190,6 +190,22 @@ function discoverEntities(hass, prefix = "evcc_") {
   return { loadpoints, site };
 }
 
+function _discoverDeviceSources(site, prefix, primarySuffix, secondarySuffix) {
+  const sources = [];
+  for (let i = 0; i < 32; i++) {
+    const key = `${prefix}_${i}_${primarySuffix}`;
+    if (!site[key]) break;
+    const entry = { key, idx: i };
+    if (secondarySuffix) {
+      const secKey = `${prefix}_${i}_${secondarySuffix}`;
+      if (secondarySuffix === "soc") entry.socKey = secKey;
+      else if (secondarySuffix === "energy") entry.energyKey = secKey;
+    }
+    sources.push(entry);
+  }
+  return sources;
+}
+
 function stateVal(hass, entityId) {
   return hass.states[entityId]?.state ?? null;
 }
@@ -1200,15 +1216,10 @@ class EvccCard extends HTMLElement {
     const kwh = id => id ? parseFloat(stateVal(this._hass, id)) || 0 : null;
     const ct  = id => id ? parseFloat(stateVal(this._hass, id)) || 0 : null;
 
-    const pvNameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
-    const pvSources = [
-      { key: "pv_0_power", energyKey: "pv_0_energy", idx: 1 },
-      { key: "pv_1_power", energyKey: "pv_1_energy", idx: 2 },
-      { key: "pv_2_power", energyKey: "pv_2_energy", idx: 3 },
-      { key: "pv_3_power", energyKey: "pv_3_energy", idx: 4 },
-    ].filter(s => site[s.key]).map(s => ({
+    const nameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
+    const pvSources = _discoverDeviceSources(site, "pv", "power", "energy").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `PV ${s.idx}`,
+      label: nameFromEntity(site[s.key]) ?? `PV ${s.idx + 1}`,
     }));
     const pvPow = pvSources.length > 0
       ? pvSources.reduce((sum, s) => sum + kw(site[s.key]), 0)
@@ -1216,14 +1227,9 @@ class EvccCard extends HTMLElement {
     const pvKwh = pvSources.length > 0
       ? pvSources.reduce((sum, s) => sum + (kwh(site[s.energyKey]) ?? 0), 0)
       : kwh(site.pv_energy);
-    const battSources = [
-      { key: "battery_0_power", socKey: "battery_0_soc", idx: 0 },
-      { key: "battery_1_power", socKey: "battery_1_soc", idx: 1 },
-      { key: "battery_2_power", socKey: "battery_2_soc", idx: 2 },
-      { key: "battery_3_power", socKey: "battery_3_soc", idx: 3 },
-    ].filter(s => site[s.key]).map(s => ({
+    const battSources = _discoverDeviceSources(site, "battery", "power", "soc").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
+      label: nameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
     }));
     const gridPow = kw(site.grid_power);
     const battPow = kw(site.battery_power);
@@ -1278,10 +1284,10 @@ class EvccCard extends HTMLElement {
 
     const segments = [
       { cls: "seg-pv",         pct: pvSelfPct,    label: fmtPow(pvSelfPow),    color: "var(--evcc-green)",  show: pvSelfPow > 0.05 },
+      { cls: "seg-battd",      pct: battDPct,     label: fmtPow(battDischPow), color: "var(--evcc-orange)", show: battDischPow > 0.05 },
       { cls: "seg-pv-surplus", pct: pvSurplusPct, label: fmtPow(pvSurplusPow), color: "var(--evcc-yellow)", show: pvSurplusPow > 0.05 },
-      { cls: "seg-battd",   pct: battDPct,  label: fmtPow(battDischPow),color: "var(--evcc-orange)", show: battDischPow > 0.05 },
-      { cls: "seg-gridin",  pct: gridInPct, label: fmtPow(bezugPow),    color: "var(--evcc-red)",    show: bezugPow > 0.05 },
-    ].filter(s => s.pct > 0);;
+      { cls: "seg-gridin",     pct: gridInPct,    label: fmtPow(bezugPow),     color: "var(--evcc-red)",    show: bezugPow > 0.05 },
+    ].filter(s => s.pct > 0);
 
     const segTotal = segments.reduce((s, x) => s + x.pct, 0);
     if (segTotal > 0 && segTotal !== 100) {
@@ -1312,16 +1318,15 @@ class EvccCard extends HTMLElement {
 
     const SVG_W        = 1000;
     const LABEL_W      = 60;
-    const BRACE_TOP_H  = 52;
+    const BRACE_TOP_H  = 40;
     const BAR_H        = 48;
-    const BRACE_BOT_H  = 52;
+    const BRACE_BOT_H  = 40;
     const BAR_Y        = BRACE_TOP_H;
     const BAR_X0       = 0;
     const BAR_X1       = SVG_W - LABEL_W;
     const BAR_W        = BAR_X1 - BAR_X0;
     const SVG_H        = BRACE_TOP_H + BAR_H + BRACE_BOT_H;
     const R            = 5;
-    const TICK         = 7;
 
     const TOP_TIP_Y    = BAR_Y - BRACE_TOP_H + 10;
     const BOT_TIP_Y    = BAR_Y + BAR_H + BRACE_BOT_H - 10;
@@ -1330,15 +1335,30 @@ class EvccCard extends HTMLElement {
     const COL_TEXT     = "currentColor";
     const COL_LABEL    = "currentColor";
 
+    const BRACE_R = 14;
+    const BRACE_GAP = 8;
     const bracePath = (x0, x1, barEdgeY, tipY) => {
-      const yEnd = barEdgeY + (tipY > barEdgeY ? TICK : -TICK);
-      return [
-        `M ${x0} ${barEdgeY}`,
-        `L ${x0} ${yEnd}`,
-        `Q ${x0} ${tipY} ${(x0 + x1) / 2} ${tipY}`,
-        `Q ${x1} ${tipY} ${x1} ${yEnd}`,
-        `L ${x1} ${barEdgeY}`,
-      ].join(" ");
+      const r = Math.min(BRACE_R, Math.abs(tipY - barEdgeY) / 2, (x1 - x0) / 4);
+      const startY = tipY < barEdgeY ? barEdgeY - BRACE_GAP : barEdgeY + BRACE_GAP;
+      if (tipY < barEdgeY) {
+        return [
+          `M ${x0} ${startY}`,
+          `L ${x0} ${tipY + r}`,
+          `A ${r} ${r} 0 0 1 ${x0 + r} ${tipY}`,
+          `L ${x1 - r} ${tipY}`,
+          `A ${r} ${r} 0 0 1 ${x1} ${tipY + r}`,
+          `L ${x1} ${startY}`,
+        ].join(" ");
+      } else {
+        return [
+          `M ${x0} ${startY}`,
+          `L ${x0} ${tipY - r}`,
+          `A ${r} ${r} 0 0 0 ${x0 + r} ${tipY}`,
+          `L ${x1 - r} ${tipY}`,
+          `A ${r} ${r} 0 0 0 ${x1} ${tipY - r}`,
+          `L ${x1} ${startY}`,
+        ].join(" ");
+      }
     };
 
     let cumX = BAR_X0;
@@ -1380,10 +1400,11 @@ class EvccCard extends HTMLElement {
     ).join("");
 
     const barLabels = segsWithX.map(s => {
-      if (s.w < 80) return "";
-      return `<text x="${s.xMid}" y="${BAR_Y + BAR_H / 2 + 8}"
-                    text-anchor="middle" font-size="24" font-weight="700"
-                    fill="rgba(255,255,255,0.95)">${s.label}</text>`;
+      if (s.w < 40) return "";
+      const fs = s.w < 80 ? 18 : 24;
+      return `<text x="${s.xMid}" y="${BAR_Y + BAR_H / 2 + (fs === 18 ? 6 : 8)}"
+                    text-anchor="middle" font-size="${fs}" font-weight="700"
+                    fill="#fff" style="text-shadow:0 1px 3px rgba(0,0,0,0.5)">${s.label}</text>`;
     }).join("");
 
     const MDI = {
@@ -1395,34 +1416,44 @@ class EvccCard extends HTMLElement {
       solpan:  "M4,6H20A2,2 0 0,1 22,8V16A2,2 0 0,1 20,18H4A2,2 0 0,1 2,16V8A2,2 0 0,1 4,6M4,8V16H20V8H4M5,9H11V13H5V9M12,9H19V13H12V9M5,14H11V16H5V14M12,14H19V16H12V14Z",
       heat:    "M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 0,0 12,22A5,5 0 0,0 15,13M12,4A1,1 0 0,1 13,5V14.08C14.16,14.54 15,15.67 15,17A3,3 0 0,1 12,20A3,3 0 0,1 9,17C9,15.67 9.84,14.54 11,14.08V5A1,1 0 0,1 12,4Z",
     };
-    const srcPathMap = { "seg-pv": MDI.solar, "seg-battd": MDI.battery, "seg-gridin": MDI.tower };
+    const srcPathMap = { "seg-pv": MDI.solar, "seg-pv-surplus": MDI.solar, "seg-battd": MDI.battery, "seg-gridin": MDI.tower };
     segsWithX.forEach(s => { s.srcPath = srcPathMap[s.cls] || ""; });
     const botPathMap = { "🏠": MDI.home, "🔌": MDI.ev, "🔋": MDI.battery, "🗼": MDI.tower };
     botSegsWithX.forEach(s => { s.mdiPath = botPathMap[s.icon] || ""; });
 
     const SVG_ICON_HALF = 12;
 
-    // PV-Segmente (seg-pv + seg-pv-surplus) zu einer gemeinsamen Klammer zusammenführen
+    const pvSeg      = segsWithX.find(s => s.cls === "seg-pv");
+    const battSeg    = segsWithX.find(s => s.cls === "seg-battd");
+    const surplusSeg = segsWithX.find(s => s.cls === "seg-pv-surplus");
+    const gridSeg    = segsWithX.find(s => s.cls === "seg-gridin");
     const topBraceGroups = [];
-    let ti = 0;
-    while (ti < segsWithX.length) {
-      const s = segsWithX[ti];
-      if (s.cls === "seg-pv" || s.cls === "seg-pv-surplus") {
-        let tj = ti;
-        while (tj < segsWithX.length &&
-               (segsWithX[tj].cls === "seg-pv" || segsWithX[tj].cls === "seg-pv-surplus")) tj++;
-        const grp = segsWithX.slice(ti, tj);
+    if (battSeg) {
+      // Mit Batterie: PV eigene Klammer, Batterie+Einspeisung gemeinsame Klammer
+      if (pvSeg) {
+        topBraceGroups.push({ x0: pvSeg.x0, x1: pvSeg.x1, xMid: pvSeg.xMid, srcPath: MDI.solar });
+      }
+      const battGroup = [battSeg, surplusSeg].filter(Boolean);
+      if (battGroup.length) {
         topBraceGroups.push({
-          x0: grp[0].x0,
-          x1: grp[grp.length - 1].x1,
-          xMid: (grp[0].x0 + grp[grp.length - 1].x1) / 2,
+          x0: battGroup[0].x0, x1: battGroup[battGroup.length - 1].x1,
+          xMid: (battGroup[0].x0 + battGroup[battGroup.length - 1].x1) / 2,
+          srcPath: MDI.battery,
+        });
+      }
+    } else {
+      // Ohne Batterie: PV+Einspeisung gemeinsame Klammer
+      const pvGroup = [pvSeg, surplusSeg].filter(Boolean);
+      if (pvGroup.length) {
+        topBraceGroups.push({
+          x0: pvGroup[0].x0, x1: pvGroup[pvGroup.length - 1].x1,
+          xMid: (pvGroup[0].x0 + pvGroup[pvGroup.length - 1].x1) / 2,
           srcPath: MDI.solar,
         });
-        ti = tj;
-      } else {
-        topBraceGroups.push(s);
-        ti++;
       }
+    }
+    if (gridSeg) {
+      topBraceGroups.push({ x0: gridSeg.x0, x1: gridSeg.x1, xMid: gridSeg.xMid, srcPath: MDI.tower });
     }
 
     const topBraces = topBraceGroups.map(s => {
@@ -1432,7 +1463,7 @@ class EvccCard extends HTMLElement {
         <path d="${path}" fill="none"
               style="stroke:var(--primary-text-color,#212121);opacity:0.45"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        <g transform="translate(${ix},${iy})" style="opacity:0.85">
+        <g transform="translate(${ix},${iy}) scale(1.25)" style="opacity:0.85">
           <path d="${s.srcPath}" style="fill:var(--primary-text-color,#212121)" />
         </g>`;
     }).join("");
@@ -1444,7 +1475,7 @@ class EvccCard extends HTMLElement {
         <path d="${path}" fill="none"
               style="stroke:var(--primary-text-color,#212121);opacity:0.45"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        <g transform="translate(${ix},${iy})" style="opacity:0.85">
+        <g transform="translate(${ix},${iy}) scale(1.25)" style="opacity:0.85">
           <path d="${s.mdiPath}" style="fill:var(--primary-text-color,#212121)" />
         </g>`;
     }).join("");
@@ -1502,7 +1533,8 @@ class EvccCard extends HTMLElement {
         const val    = ents.vehicle_soc
           ? `${Math.round(parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0)} ${unit}`
           : "";
-        const label  = val ? `${lpName.toUpperCase()} – ${val}` : lpName.toUpperCase();
+        const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        const label  = val ? `${lpTitle} – ${val}` : lpTitle;
         const icon   = unit.includes("°")
           ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 0,0 12,22A5,5 0 0,0 15,13M12,4A1,1 0 0,1 13,5V14.08C14.16,14.54 15,15.67 15,17A3,3 0 0,1 12,20A3,3 0 0,1 9,17C9,15.67 9.84,14.54 11,14.08V5A1,1 0 0,1 12,4Z"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7.03 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14A2,2 0 0,0 15,12H14V5A2,2 0 0,0 12,3H6A2,2 0 0,0 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10M12,10H6V5H12V10Z"/></svg>`;
@@ -1591,27 +1623,17 @@ class EvccCard extends HTMLElement {
     };
     const kwh = id => id ? parseFloat(stateVal(this._hass, id)) || 0 : null;
 
-    const pvNameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
-    const pvSources = [
-      { key: "pv_0_power", energyKey: "pv_0_energy", idx: 1 },
-      { key: "pv_1_power", energyKey: "pv_1_energy", idx: 2 },
-      { key: "pv_2_power", energyKey: "pv_2_energy", idx: 3 },
-      { key: "pv_3_power", energyKey: "pv_3_energy", idx: 4 },
-    ].filter(s => site[s.key]).map(s => ({
+    const nameFromEntity = (entityId) => entityId ? (attr(this._hass, entityId, "title") ?? null) : null;
+    const pvSources = _discoverDeviceSources(site, "pv", "power", "energy").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `PV ${s.idx}`,
+      label: nameFromEntity(site[s.key]) ?? `PV ${s.idx + 1}`,
     }));
     const pvPow = pvSources.length > 0
       ? pvSources.reduce((sum, s) => sum + kw(site[s.key]), 0)
       : kw(site.pv_power);
-    const battSources = [
-      { key: "battery_0_power", socKey: "battery_0_soc", idx: 0 },
-      { key: "battery_1_power", socKey: "battery_1_soc", idx: 1 },
-      { key: "battery_2_power", socKey: "battery_2_soc", idx: 2 },
-      { key: "battery_3_power", socKey: "battery_3_soc", idx: 3 },
-    ].filter(s => site[s.key]).map(s => ({
+    const battSources = _discoverDeviceSources(site, "battery", "power", "soc").map(s => ({
       ...s,
-      label: pvNameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
+      label: nameFromEntity(site[s.key]) ?? `${this._t("battery")} ${s.idx + 1}`,
     }));
     const gridPow = kw(site.grid_power);
     const battPow = kw(site.battery_power);
@@ -1909,7 +1931,8 @@ class EvccCard extends HTMLElement {
         const val    = ents.vehicle_soc
           ? `${Math.round(parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0)} ${unit}`
           : "";
-        const label  = val ? `${lpName.toUpperCase()} – ${val}` : lpName.toUpperCase();
+        const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        const label  = val ? `${lpTitle} – ${val}` : lpTitle;
         const icon   = unit.includes("°")
           ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="${MDI.heat || "M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 0,0 12,22A5,5 0 0,0 15,13M12,4A1,1 0 0,1 13,5V14.08C14.16,14.54 15,15.67 15,17A3,3 0 0,1 12,20A3,3 0 0,1 9,17C9,15.67 9.84,14.54 11,14.08V5A1,1 0 0,1 12,4Z"}"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="var(--secondary-text-color)" style="vertical-align:middle"><path d="${MDI.ev}"/></svg>`;
@@ -1991,17 +2014,9 @@ class EvccCard extends HTMLElement {
       return unit === "kW" ? raw : raw / 1000;
     };
 
-    const pvSources = [
-      { key: "pv_0_power" }, { key: "pv_1_power" },
-      { key: "pv_2_power" }, { key: "pv_3_power" },
-    ].filter(s => site[s.key]);
+    const pvSources = _discoverDeviceSources(site, "pv", "power");
 
-    const battSources = [
-      { key: "battery_0_power", socKey: "battery_0_soc", idx: 0 },
-      { key: "battery_1_power", socKey: "battery_1_soc", idx: 1 },
-      { key: "battery_2_power", socKey: "battery_2_soc", idx: 2 },
-      { key: "battery_3_power", socKey: "battery_3_soc", idx: 3 },
-    ].filter(s => site[s.key]).map(s => ({
+    const battSources = _discoverDeviceSources(site, "battery", "power", "soc").map(s => ({
       ...s,
       label: (site[s.key] ? (attr(this._hass, site[s.key], "title") ?? null) : null) ?? `${this._t("battery")} ${s.idx + 1}`,
     }));
@@ -2058,7 +2073,8 @@ class EvccCard extends HTMLElement {
         const soc   = ents.vehicle_soc
           ? `${Math.round(parseFloat(stateVal(this._hass, ents.vehicle_soc)) || 0)} ${unit}`
           : "";
-        return chip("var(--evcc-blue)", lpName.toUpperCase(), soc ? `${fmtKw(lpPow)} · ${soc}` : fmtKw(lpPow), ents.charge_power);
+        const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+        return chip("var(--evcc-blue)", lpTitle, soc ? `${fmtKw(lpPow)} · ${soc}` : fmtKw(lpPow), ents.charge_power);
       }).join("");
 
     const aggBattSoc = site.battery_soc ? Math.round(parseFloat(stateVal(this._hass, site.battery_soc)) || 0) : null;
