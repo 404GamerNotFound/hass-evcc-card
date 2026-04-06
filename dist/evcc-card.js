@@ -3598,7 +3598,7 @@ class EvccCardEditor extends HTMLElement {
     `).join("");
   }
 
-  _elementOptions() {
+  _elementOptions(mode = "loadpoint") {
     const allOptions = [
       ["mode_selector", this._t("editorElementModeSelector")],
       ["vehicle_info", this._t("editorElementVehicleInfo")],
@@ -3614,11 +3614,24 @@ class EvccCardEditor extends HTMLElement {
       ["consumption_chips", this._t("editorElementConsumptionChips")],
       ["stats_footer", this._t("editorElementStatsFooter")],
     ];
-    return allOptions;
+
+    const visibleByMode = {
+      loadpoint: ["mode_selector", "vehicle_info", "power_row", "sliders", "charge_settings", "plan_block", "session_info"],
+      compact: ["mode_selector", "vehicle_info", "power_row", "sliders", "charge_settings", "plan_block", "session_info"],
+      site: ["energy_overview", "detail_table"],
+      flow: ["energy_overview", "detail_table"],
+      grid: ["grid_status", "generation_chips", "consumption_chips", "detail_table"],
+      stats: ["stats_footer"],
+      battery: [],
+      plan: [],
+    };
+
+    const visibleElements = new Set(visibleByMode[mode] || visibleByMode.loadpoint);
+    return allOptions.filter(([key]) => visibleElements.has(key));
   }
 
-  _elementCheckboxes(hiddenElements) {
-    const options = this._elementOptions();
+  _elementCheckboxes(hiddenElements, mode) {
+    const options = this._elementOptions(mode);
     if (options.length === 0) return "";
     return options.map(([key, label]) => `
       <label class="cb-row">
@@ -3703,7 +3716,7 @@ class EvccCardEditor extends HTMLElement {
         <div class="field">
           <div class="section-title">Sichtbare Elemente</div>
           <div class="hint">Je nach Modus werden nur relevante Elemente im Frontend verwendet.</div>
-          ${this._elementCheckboxes(hiddenElements)}
+          ${this._elementCheckboxes(hiddenElements, mode)}
         </div>
         <div class="field">
           <div class="section-title">Ladepunkte anzeigen</div>
@@ -3714,30 +3727,36 @@ class EvccCardEditor extends HTMLElement {
           <div class="section-title">Kein Ladeplan für</div>
           ${this._checkboxes("no_plan", noPlan)}
         </div>
-        <div class="field">
-          <label class="field-label" for="charge_current_settings">Ladestrom-Einstellungen</label>
-          ${this._sel("charge_current_settings", [
-            ["collapsed", "Eingeklappt"],
-            ["expanded",  "Aufgeklappt"],
-          ], c.charge_current_settings || "collapsed")}
-        </div>
-        <div class="field">
-          <label class="field-label" for="site_details">Site-Details</label>
-          ${this._sel("site_details", [
-            ["expanded",  "Aufgeklappt"],
-            ["collapsed", "Eingeklappt"],
-          ], c.site_details || "expanded")}
-        </div>
-        <div class="field">
-          <label class="field-label" for="stats_period">Statistik-Zeitraum</label>
-          ${this._sel("stats_period", [
-            ["total",    "Gesamt"],
-            ["30d",      "30 Tage"],
-            ["365d",     "365 Tage"],
-            ["thisYear", "Dieses Jahr"],
-            ["none",     "Keiner"],
-          ], c.stats_period || "total")}
-        </div>
+        ${(mode === "loadpoint" || mode === "compact") ? `
+          <div class="field">
+            <label class="field-label" for="charge_current_settings">Ladestrom-Einstellungen</label>
+            ${this._sel("charge_current_settings", [
+              ["collapsed", "Eingeklappt"],
+              ["expanded",  "Aufgeklappt"],
+            ], c.charge_current_settings || "collapsed")}
+          </div>
+        ` : ""}
+        ${(mode === "site" || mode === "flow") ? `
+          <div class="field">
+            <label class="field-label" for="site_details">Site-Details</label>
+            ${this._sel("site_details", [
+              ["expanded",  "Aufgeklappt"],
+              ["collapsed", "Eingeklappt"],
+            ], c.site_details || "expanded")}
+          </div>
+        ` : ""}
+        ${mode === "stats" ? `
+          <div class="field">
+            <label class="field-label" for="stats_period">Statistik-Zeitraum</label>
+            ${this._sel("stats_period", [
+              ["total",    "Gesamt"],
+              ["30d",      "30 Tage"],
+              ["365d",     "365 Tage"],
+              ["thisYear", "Dieses Jahr"],
+              ["none",     "Keiner"],
+            ], c.stats_period || "total")}
+          </div>
+        ` : ""}
       </div>
     `;
 
