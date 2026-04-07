@@ -1,11 +1,11 @@
 /**
- * evcc-card — Generic Home Assistant Lovelace card for ha-evcc
+ * evcc-card — Generische Home Assistant Lovelace Card für ha-evcc
  *
- * File:     evcc-card.js
- * Location: /config/www/evcc-card/evcc-card.js
+ * Datei:   evcc-card.js
+ * Ablage:  /config/www/evcc-card/evcc-card.js
  *
- * Translations: /config/www/evcc-card/locales/de.json
- *               /config/www/evcc-card/locales/en.json
+ * Übersetzungen: /config/www/evcc-card/locales/de.json
+ *                /config/www/evcc-card/locales/en.json
  */
 
 const EVCC_CARD_VERSION = "0.5.6";
@@ -773,7 +773,7 @@ class EvccCard extends HTMLElement {
     const power = parseFloat(stateVal(this._hass, ents.charge_power)).toFixed(1);
     const unit  = unitStr(this._hass, ents.charge_power);
 
-    // Phase current sensors (real measured values, disabled by default)
+    // Phasenstrom-Sensoren (echte Messwerte, standardmäßig deaktiviert)
     const hasPhaseCurrents = ents.charge_currents_0 || ents.charge_currents_1 || ents.charge_currents_2;
     const phaseCurrents = hasPhaseCurrents
       ? [0, 1, 2].map(i => {
@@ -784,24 +784,24 @@ class EvccCard extends HTMLElement {
         })
       : null;
 
-    // Fallback: offeredCurrent (when no phase current sensors are available)
+    // Fallback: offeredCurrent (wenn keine Phasenstrom-Sensoren vorhanden)
     const current = !hasPhaseCurrents && ents.charge_current
       ? stateVal(this._hass, ents.charge_current) : null;
 
-    // Phase label only when no individual phase values are visible
+    // Phasen-Label nur wenn keine Einzelwerte sichtbar
     const phases = !hasPhaseCurrents && ents.phases_active
       ? parseInt(stateVal(this._hass, ents.phases_active)) || null : null;
     const phasesLabel = phases === 1 ? this._t("phasesSingle")
                       : phases === 3 ? this._t("phasesTriple")
                       : phases !== null ? `${phases}` : null;
 
-    // Only show phases with current > 0 (robust for any phase assignment)
+    // Nur Phasen mit Strom > 0 anzeigen (robust gegen beliebige Phase-Belegung)
     const activePhases = phaseCurrents ? phaseCurrents.filter(v => v !== null && v > 0) : null;
     const phaseStr = activePhases && activePhases.length > 0
       ? activePhases.map(v => Math.round(v)).join(" / ") + " A"
       : null;
 
-    // Hint when offeredCurrent is shown (no phase current entities available)
+    // Hinweis wenn offeredCurrent gezeigt wird (keine Phasenstrom-Entities verfügbar)
     const hint = current !== null
       ? `<div class="power-currents-hint">${this._t("phaseCurrentsHint")}</div>`
       : "";
@@ -1462,7 +1462,7 @@ class EvccCard extends HTMLElement {
     const gridSeg    = segsWithX.find(s => s.cls === "seg-gridin");
     const topBraceGroups = [];
     if (battSeg) {
-      // With battery: separate PV brace, shared battery+export brace
+      // Mit Batterie: PV eigene Klammer, Batterie+Einspeisung gemeinsame Klammer
       if (pvSeg) {
         topBraceGroups.push({ x0: pvSeg.x0, x1: pvSeg.x1, xMid: pvSeg.xMid, srcPath: MDI.solar });
       }
@@ -1475,7 +1475,7 @@ class EvccCard extends HTMLElement {
         });
       }
     } else {
-      // Without battery: shared PV+export brace
+      // Ohne Batterie: PV+Einspeisung gemeinsame Klammer
       const pvGroup = [pvSeg, surplusSeg].filter(Boolean);
       if (pvGroup.length) {
         topBraceGroups.push({
@@ -2163,7 +2163,7 @@ class EvccCard extends HTMLElement {
         </div>
         ${this._showElement("grid_status") ? `
           <div class="s2-net">
-            <div class="s2-net-label">${this._t("gridStatus") || "Grid status"}</div>
+            <div class="s2-net-label">${this._t("gridStatus") || "Netzstatus"}</div>
             <div class="s2-net-value" style="color:${netColor}">${netValStr}</div>
             <div class="s2-net-status" style="color:${netColor}">${netLabel}</div>
             ${pvBadge}
@@ -3589,7 +3589,7 @@ class EvccCardEditor extends HTMLElement {
 
   _checkboxes(type, selected) {
     const lps = this._availableLoadpoints;
-    if (lps.length === 0) return `<div class="hint">${this._t("editorNoLoadpointsFound")}</div>`;
+    if (lps.length === 0) return `<div class="hint">Keine Ladepunkte gefunden</div>`;
     return lps.map(lp => `
       <label class="cb-row">
         <input type="checkbox" data-field="${type}" data-lp="${this._esc(lp)}" ${selected.includes(lp) ? "checked" : ""}>
@@ -3618,9 +3618,9 @@ class EvccCardEditor extends HTMLElement {
     const visibleByMode = {
       loadpoint: ["mode_selector", "vehicle_info", "power_row", "sliders", "charge_settings", "plan_block", "session_info"],
       compact: ["mode_selector", "vehicle_info", "power_row", "sliders", "charge_settings", "plan_block", "session_info"],
-      site: ["energy_overview", "detail_table"],
-      flow: ["energy_overview", "detail_table"],
-      grid: ["grid_status", "generation_chips", "consumption_chips", "detail_table"],
+      site: ["energy_overview", "detail_table", "stats_footer"],
+      flow: ["energy_overview", "detail_table", "stats_footer"],
+      grid: ["grid_status", "generation_chips", "consumption_chips", "detail_table", "stats_footer"],
       stats: ["stats_footer"],
       battery: [],
       plan: [],
@@ -3652,15 +3652,15 @@ class EvccCardEditor extends HTMLElement {
     const hiddenElements = Array.isArray(c.hidden_elements) ? c.hidden_elements : [];
 
     const titlePlaceholder = {
-      loadpoint: this._t("editorTitlePlaceholderLoadpoint"),
-      compact:   this._t("editorTitlePlaceholderCompact"),
-      plan:      this._t("editorTitlePlaceholderPlan"),
-      site:      this._t("editorTitlePlaceholderSite"),
-      flow:      this._t("editorTitlePlaceholderFlow"),
-      grid:      this._t("editorTitlePlaceholderGrid"),
-      stats:     this._t("editorTitlePlaceholderStats"),
-      battery:   this._t("editorTitlePlaceholderBattery"),
-    }[mode] || this._t("editorTitlePlaceholderLoadpoint");
+      loadpoint: "Standard: Ladepoint-Name",
+      compact:   "Standard: Ladepoint-Name",
+      plan:      "Standard: Ladepoint-Name",
+      site:      "Standard: Übersicht",
+      flow:      "Standard: Energiefluss",
+      grid:      "Standard: Netz",
+      stats:     "Standard: Statistik",
+      battery:   "Standard: Hausbatterie",
+    }[mode] || "Standard: Ladepoint-Name";
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -3683,77 +3683,79 @@ class EvccCardEditor extends HTMLElement {
       </style>
       <div class="form">
         <div class="field">
-          <label class="field-label" for="mode">${this._t("editorModeLabel")}</label>
+          <label class="field-label" for="mode">Modus</label>
           ${this._sel("mode", [
-            ["loadpoint", this._t("editorModeLoadpoint")],
-            ["compact",   this._t("editorModeCompact")],
-            ["site",      this._t("editorModeSite")],
-            ["flow",      this._t("editorModeFlow")],
-            ["grid",      this._t("editorModeGrid")],
-            ["battery",   this._t("editorModeBattery")],
-            ["stats",     this._t("editorModeStats")],
-            ["plan",      this._t("editorModePlan")],
+            ["loadpoint", "Ladepunkt (loadpoint)"],
+            ["compact",   "Kompakt (compact)"],
+            ["site",      "Übersicht (site)"],
+            ["flow",      "Energiefluss (flow)"],
+            ["grid",      "Netz (grid)"],
+            ["battery",   "Batterie (battery)"],
+            ["stats",     "Statistik (stats)"],
+            ["plan",      "Plan (plan)"],
           ], mode)}
         </div>
         <div class="field">
-          <label class="field-label" for="title">${this._t("editorTitleLabel")} <span class="hint" style="display:inline">(${this._t("editorOptional")})</span></label>
+          <label class="field-label" for="title">Titel <span class="hint" style="display:inline">(optional)</span></label>
           <input id="title" class="ha-input" type="text" value="${this._esc(c.title || "")}" placeholder="${titlePlaceholder}">
         </div>
         <div class="field">
-          <label class="field-label" for="language">${this._t("editorLanguageLabel")}</label>
+          <label class="field-label" for="language">Sprache</label>
           ${this._sel("language", [
-            ["",   this._t("editorLanguageAuto")],
-            ["de", this._t("editorLanguageNameDe")],
-            ["en", this._t("editorLanguageNameEn")],
-            ["es", this._t("editorLanguageNameEs")],
-            ["fr", this._t("editorLanguageNameFr")],
-            ["hr", this._t("editorLanguageNameHr")],
-            ["nl", this._t("editorLanguageNameNl")],
-            ["pl", this._t("editorLanguageNamePl")],
-            ["pt", this._t("editorLanguageNamePt")],
+            ["",   "Automatisch (aus HA)"],
+            ["de", "Deutsch"],
+            ["en", "English"],
+            ["es", "Español"],
+            ["fr", "Français"],
+            ["hr", "Hrvatski"],
+            ["nl", "Nederlands"],
+            ["pl", "Polski"],
+            ["pt", "Português"],
           ], c.language || "")}
         </div>
         <div class="field">
-          <div class="section-title">${this._t("editorVisibleElementsTitle")}</div>
-          <div class="hint">${this._t("editorVisibleElementsHint")}</div>
+          <div class="section-title">Sichtbare Elemente</div>
+          <div class="hint">Je nach Modus werden nur relevante Elemente im Frontend verwendet.</div>
           ${this._elementCheckboxes(hiddenElements, mode)}
         </div>
-        <div class="field">
-          <div class="section-title">${this._t("editorShowLoadpointsTitle")}</div>
-          <div class="hint">${this._t("editorShowLoadpointsHint")}</div>
-          ${this._checkboxes("loadpoints", selLps)}
-        </div>
-        <div class="field">
-          <div class="section-title">${this._t("editorNoPlanForTitle")}</div>
-          ${this._checkboxes("no_plan", noPlan)}
-        </div>
+        ${["loadpoint", "compact", "plan"].includes(mode) ? `
+          <div class="field">
+            <div class="section-title">Ladepunkte anzeigen</div>
+            <div class="hint">Leer = alle anzeigen</div>
+            ${this._checkboxes("loadpoints", selLps)}
+          </div>
+          <div class="field">
+            <div class="section-title">Kein Ladeplan für</div>
+            ${this._checkboxes("no_plan", noPlan)}
+          </div>
+        ` : ""}
         ${(mode === "loadpoint" || mode === "compact") ? `
           <div class="field">
-            <label class="field-label" for="charge_current_settings">${this._t("editorChargeCurrentSettingsLabel")}</label>
+            <label class="field-label" for="charge_current_settings">Ladestrom-Einstellungen</label>
             ${this._sel("charge_current_settings", [
-              ["collapsed", this._t("editorCollapsed")],
-              ["expanded",  this._t("editorExpanded")],
+              ["collapsed", "Eingeklappt"],
+              ["expanded",  "Aufgeklappt"],
             ], c.charge_current_settings || "collapsed")}
           </div>
         ` : ""}
         ${(mode === "site" || mode === "flow") ? `
           <div class="field">
-            <label class="field-label" for="site_details">${this._t("editorSiteDetailsLabel")}</label>
+            <label class="field-label" for="site_details">Site-Details</label>
             ${this._sel("site_details", [
-              ["expanded",  this._t("editorExpanded")],
-              ["collapsed", this._t("editorCollapsed")],
+              ["expanded",  "Aufgeklappt"],
+              ["collapsed", "Eingeklappt"],
             ], c.site_details || "expanded")}
           </div>
         ` : ""}
-        ${mode === "stats" ? `
+        ${["site", "flow", "grid", "stats"].includes(mode) ? `
           <div class="field">
-            <label class="field-label" for="stats_period">${this._t("editorStatsPeriodLabel")}</label>
+            <label class="field-label" for="stats_period">Statistik-Zeitraum</label>
             ${this._sel("stats_period", [
-              ["total",    this._t("editorStatsPeriodTotal")],
-              ["30d",      this._t("editorStatsPeriod30d")],
-              ["365d",     this._t("editorStatsPeriod365d")],
-              ["thisYear", this._t("editorStatsPeriodThisYear")],
-              ["none",     this._t("editorStatsPeriodNone")],
+              ["total",    "Gesamt"],
+              ["30d",      "30 Tage"],
+              ["365d",     "365 Tage"],
+              ["thisYear", "Dieses Jahr"],
+              ["none",     "Keiner"],
             ], c.stats_period || "total")}
           </div>
         ` : ""}
