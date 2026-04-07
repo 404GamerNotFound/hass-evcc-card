@@ -8,7 +8,7 @@
  *                /config/www/evcc-card/locales/en.json
  */
 
-const EVCC_CARD_VERSION = "0.5.6";
+const EVCC_CARD_VERSION = "0.5.7";
 
 const FEATURES = [
   { suffix: "mode",                domain: "select",        type: "mode",          lp: true  },
@@ -3875,8 +3875,12 @@ class EvccCardEditor extends HTMLElement {
   }
 }
 
-customElements.define("evcc-card-editor", EvccCardEditor);
-customElements.define("evcc-card", EvccCard);
+if (!customElements.get("evcc-card-editor")) {
+  customElements.define("evcc-card-editor", EvccCardEditor);
+}
+if (!customElements.get("evcc-card")) {
+  customElements.define("evcc-card", EvccCard);
+}
 window.__evccCards = window.__evccCards || new Map();
 
 (async function cacheBust() {
