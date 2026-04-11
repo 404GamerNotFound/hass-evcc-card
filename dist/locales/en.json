@@ -151,7 +151,7 @@
   "smartRecoReasonNow": "Tariff is below the limit or charging is already running.",
   "smartRecoReasonLater": "Charge plan is active, but tariff is currently above the limit.",
   "smartRecoNoData": "💡 Recommendation unavailable (missing inputs)",
-  "smartRecoNoRule": "💡 No active recommendation",
+  "smartRecoNoRule": "No action needed.",
   "smartRecoSoc": "SoC",
   "smartRecoPower": "Power",
   "smartRecoPlan": "Plan",
@@ -160,5 +160,6 @@
   "smartRecoLimit": "Limit",
   "smartRecoTariff": "Tariff",
   "editorModeRecommendations": "Recommendations (recommendations)",
-  "editorTitlePlaceholderRecommendations": "Default: Smart recommendations"
+  "editorTitlePlaceholderRecommendations": "Default: Smart recommendations",
+  "smartRecoAllGood": "💡 Everything looks good — you are doing it right!"
 }

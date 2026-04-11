@@ -151,7 +151,7 @@
   "smartRecoReasonNow": "Tarif ist unter dem Limit oder Laden läuft bereits.",
   "smartRecoReasonLater": "Ladeplan aktiv, aber Tarif aktuell über dem Limit.",
   "smartRecoNoData": "💡 Empfehlung nicht verfügbar (fehlende Eingaben)",
-  "smartRecoNoRule": "💡 Keine aktive Empfehlung",
+  "smartRecoNoRule": "Keine Aktion nötig.",
   "smartRecoSoc": "SoC",
   "smartRecoPower": "Leistung",
   "smartRecoPlan": "Plan",
@@ -160,5 +160,6 @@
   "smartRecoLimit": "Limit",
   "smartRecoTariff": "Tarif",
   "editorModeRecommendations": "Empfehlungen (recommendations)",
-  "editorTitlePlaceholderRecommendations": "Standard: Smart-Empfehlungen"
+  "editorTitlePlaceholderRecommendations": "Standard: Smart-Empfehlungen",
+  "smartRecoAllGood": "💡 Alles richtig – du machst alles richtig!"
 }
