@@ -1235,7 +1235,13 @@ class EvccCard extends HTMLElement {
     const chargePower = ents.charge_power ? parseFloat(stateVal(this._hass, ents.charge_power)) : NaN;
     const soc = ents.vehicle_soc ? parseFloat(stateVal(this._hass, ents.vehicle_soc)) : NaN;
     const smartActive = smartLimit !== null && !isNaN(tariffValue) && tariffValue <= smartLimit;
-    const hasInputs = smartLimit !== null && !isNaN(tariffValue) && !isNaN(chargePower) && !isNaN(soc) && planActive !== null;
+    const missingInputs = [];
+    if (smartLimit === null) missingInputs.push("smartRecoLimit");
+    if (isNaN(tariffValue)) missingInputs.push("smartRecoTariff");
+    if (isNaN(chargePower)) missingInputs.push("smartRecoPower");
+    if (isNaN(soc)) missingInputs.push("smartRecoSoc");
+    if (planActive === null) missingInputs.push("smartRecoPlan");
+    const hasInputs = missingInputs.length === 0;
 
     let key = "";
     let reason = "";
@@ -1247,13 +1253,14 @@ class EvccCard extends HTMLElement {
         key = "smartRecoLater";
         reason = "smartRecoReasonLater";
       } else {
+        key = "smartRecoAllGood";
         reason = "smartRecoNoRule";
       }
     } else {
       reason = "smartRecoNoData";
     }
 
-    return { key, reason, hasInputs, smartLimit, smartUnit, isCo2, tariffValue, planActive, chargePower, soc, smartActive };
+    return { key, reason, hasInputs, missingInputs, smartLimit, smartUnit, isCo2, tariffValue, planActive, chargePower, soc, smartActive };
   }
 
   _renderRecommendationsMode(visible, allLoadpoints) {
@@ -1278,7 +1285,9 @@ class EvccCard extends HTMLElement {
         ? "—"
         : (rec.planActive ? this._t("smartRecoPlanOn") : this._t("smartRecoPlanOff"));
       const recommendationText = rec.key ? this._t(rec.key) : this._t(rec.reason);
-      const reasonText = this._t(rec.reason);
+      const reasonText = rec.reason === "smartRecoNoData" && rec.missingInputs.length > 0
+        ? `${this._t(rec.reason)}: ${rec.missingInputs.map((entry) => this._t(entry)).join(", ")}`
+        : this._t(rec.reason);
 
       return `
         <div class="smart-reco-card">
