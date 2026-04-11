@@ -114,6 +114,7 @@
   "editorModeBattery": "Battery (battery)",
   "editorModeStats": "Statistics (stats)",
   "editorModePlan": "Plan (plan)",
+  "editorModeRecommendations": "Recommendations (recommendations)",
   "editorTitleLabel": "Title",
   "editorOptional": "optional",
   "editorLanguageLabel": "Language",

@@ -343,6 +343,11 @@ class EvccCard extends HTMLElement {
     return Array.isArray(this._config.hidden_elements) && this._config.hidden_elements.includes(key);
   }
 
+  _normalizeMode(mode) {
+    if (mode === "recommendations") return "plan";
+    return mode || "loadpoint";
+  }
+
   _showElement(key) {
     return !this._isHiddenElement(key);
   }
@@ -505,19 +510,19 @@ class EvccCard extends HTMLElement {
       <style>${this._styles()}</style>
       <div class="evcc-scale-wrap"><ha-card>
         <div class="card-content">
-        ${this._config.mode === "battery"
+        ${this._normalizeMode(this._config.mode) === "battery"
             ? this._renderBatteryBlock(site)
-            : this._config.mode === "site"
+            : this._normalizeMode(this._config.mode) === "site"
               ? this._renderSiteBlock(site, loadpoints)
-              : this._config.mode === "flow"
+              : this._normalizeMode(this._config.mode) === "flow"
               ? this._renderFlowBlock(site, loadpoints)
-              : (this._config.mode === "grid" || this._config.mode === "site2")
+              : (this._normalizeMode(this._config.mode) === "grid" || this._normalizeMode(this._config.mode) === "site2")
               ? this._renderSiteBlock2(site, loadpoints)
-              : this._config.mode === "stats"
+              : this._normalizeMode(this._config.mode) === "stats"
               ? this._renderStatsBlock()
-              : this._config.mode === "plan"
+              : this._normalizeMode(this._config.mode) === "plan"
                 ? this._renderPlanMode(visible)
-                : this._config.mode === "compact"
+                : this._normalizeMode(this._config.mode) === "compact"
                   ? (Object.keys(visible).length === 0
                       ? this._renderEmpty(loadpoints)
                       : Object.entries(visible)
@@ -3646,7 +3651,7 @@ class EvccCardEditor extends HTMLElement {
     this._renderStrings = this._translations[lang] || this._translations.en || {};
 
     const c    = this._config;
-    const mode = c.mode || "loadpoint";
+    const mode = this._normalizeMode(c.mode);
     const selLps = Array.isArray(c.loadpoints) ? c.loadpoints : [];
     const noPlan  = Array.isArray(c.no_plan)   ? c.no_plan   : [];
     const hiddenElements = Array.isArray(c.hidden_elements) ? c.hidden_elements : [];
@@ -3655,6 +3660,7 @@ class EvccCardEditor extends HTMLElement {
       loadpoint: this._t("editorTitlePlaceholderLoadpoint"),
       compact:   this._t("editorTitlePlaceholderCompact"),
       plan:      this._t("editorTitlePlaceholderPlan"),
+      recommendations: this._t("editorTitlePlaceholderPlan"),
       site:      this._t("editorTitlePlaceholderSite"),
       flow:      this._t("editorTitlePlaceholderFlow"),
       grid:      this._t("editorTitlePlaceholderGrid"),
@@ -3693,6 +3699,7 @@ class EvccCardEditor extends HTMLElement {
             ["battery",   this._t("editorModeBattery")],
             ["stats",     this._t("editorModeStats")],
             ["plan",      this._t("editorModePlan")],
+            ["recommendations", this._t("editorModeRecommendations")],
           ], mode)}
         </div>
         <div class="field">
