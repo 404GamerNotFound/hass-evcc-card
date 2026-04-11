@@ -149,7 +149,7 @@ Add the card to any Lovelace dashboard and use the **visual editor** to configur
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `mode` | `string` | `loadpoint` | Card mode: `loadpoint`, `compact`, `battery`, `site`, `flow`, `grid`, `stats`, `plan` |
+| `mode` | `string` | `loadpoint` | Card mode: `loadpoint`, `compact`, `battery`, `site`, `flow`, `grid`, `stats`, `plan`, `recommendations` |
 | `title` | `string` | *(auto)* | Replaces the default card header |
 | `loadpoints` | `list` | *(all)* | Filter charge points by name |
 | `language` | `string` | *(auto)* | Override UI language |
@@ -316,6 +316,21 @@ Minimalist charge plan view:
 - Activate / delete plan
 
 <img src="images/plan-dark.png" width="400"> <img src="images/plan-light.png" width="400">
+
+---
+
+### `recommendations`
+
+Dedicated smart recommendation view with one card per loadpoint:
+
+- Recommendation headline (for example: "charge now with PV" or "charge later")
+- Reason line that explains why the recommendation is shown
+- Additional context values: current mode, SoC, charging power, plan state, smart limit, and current tariff
+- Fallback states when recommendation inputs are missing or no active recommendation rule matches
+
+This view is intended as a focused decision panel for users who want to monitor charging strategy at a glance.
+
+> **Mode not visible in the editor?** After updating the card, fully reload the browser (or clear browser cache) so Home Assistant loads the latest `evcc-card.js`.
 
 ---
 

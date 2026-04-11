@@ -145,5 +145,20 @@
   "editorLanguageNameHr": "Kroatisch",
   "editorLanguageNameNl": "Niederländisch",
   "editorLanguageNamePl": "Polnisch",
-  "editorLanguageNamePt": "Portugiesisch"
+  "editorLanguageNamePt": "Portugiesisch",
+  "smartRecoNowPv": "💡 Smart-Empfehlung: jetzt mit PV laden",
+  "smartRecoLater": "💡 Smart-Empfehlung: später laden",
+  "smartRecoReasonNow": "Tarif ist unter dem Limit oder Laden läuft bereits.",
+  "smartRecoReasonLater": "Ladeplan aktiv, aber Tarif aktuell über dem Limit.",
+  "smartRecoNoData": "💡 Empfehlung nicht verfügbar (fehlende Eingaben)",
+  "smartRecoNoRule": "💡 Keine aktive Empfehlung",
+  "smartRecoSoc": "SoC",
+  "smartRecoPower": "Leistung",
+  "smartRecoPlan": "Plan",
+  "smartRecoPlanOn": "Aktiv",
+  "smartRecoPlanOff": "Inaktiv",
+  "smartRecoLimit": "Limit",
+  "smartRecoTariff": "Tarif",
+  "editorModeRecommendations": "Empfehlungen (recommendations)",
+  "editorTitlePlaceholderRecommendations": "Standard: Smart-Empfehlungen"
 }
