@@ -161,5 +161,17 @@
   "smartRecoTariff": "Tariff",
   "editorModeRecommendations": "Recommendations (recommendations)",
   "editorTitlePlaceholderRecommendations": "Default: Smart recommendations",
-  "smartRecoAllGood": "💡 Everything looks good — you are doing it right!"
+  "smartRecoAllGood": "💡 Everything looks good — you are doing it right!",
+  "smartRecoConnectCar": "💡 Recommendation: connect vehicle now",
+  "smartRecoReasonConnectCar": "PV surplus is available, but no vehicle is connected.",
+  "smartRecoStartCharging": "💡 Recommendation: start charging now",
+  "smartRecoReasonStartCharging": "Vehicle is connected and PV surplus is available, but charging is disabled.",
+  "smartRecoTariffStale": "CO2 data outdated",
+  "smartRecoConnected": "Connected",
+  "smartRecoEnabled": "Charging enabled",
+  "smartRecoYes": "Yes",
+  "smartRecoNo": "No",
+  "editorRecommendationsUseLimitLabel": "Use smart charging limit in recommendations",
+  "editorRecommendationsUseLimitOn": "Enabled",
+  "editorRecommendationsUseLimitOff": "Disabled"
 }

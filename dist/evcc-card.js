@@ -525,7 +525,7 @@ class EvccCard extends HTMLElement {
               : this._config.mode === "plan"
                 ? this._renderPlanMode(visible)
                 : this._config.mode === "recommendations"
-                  ? this._renderRecommendationsMode(visible, loadpoints)
+                  ? this._renderRecommendationsMode(visible, loadpoints, site)
                 : this._config.mode === "compact"
                   ? (Object.keys(visible).length === 0
                       ? this._renderEmpty(loadpoints)
@@ -1221,7 +1221,8 @@ class EvccCard extends HTMLElement {
     }).join("");
   }
 
-  _getSmartRecommendation(ents, charging = false) {
+  _getSmartRecommendation(ents, site, charging = false) {
+    const useLimit = this._config.recommendations_use_limit !== false;
     const rawLimit = ents.smart_cost_limit ? parseFloat(stateVal(this._hass, ents.smart_cost_limit)) : NaN;
     const smartLimit = ents.smart_cost_limit && !isNaN(rawLimit) ? rawLimit : null;
     const smartUnit = smartLimit !== null
@@ -1230,23 +1231,42 @@ class EvccCard extends HTMLElement {
     const isCo2 = smartUnit === "g/kWh";
     const prefix = this._getPrefix();
     const tariffId = isCo2 ? `sensor.${prefix}tariff_co2` : `sensor.${prefix}tariff_grid`;
-    const tariffValue = parseFloat(this._hass.states[tariffId]?.state ?? "NaN");
+    const tariffState = this._hass.states[tariffId];
+    const tariffValue = parseFloat(tariffState?.state ?? "NaN");
+    const tariffAgeMs = tariffState?.last_updated
+      ? (Date.now() - new Date(tariffState.last_updated).getTime())
+      : Number.POSITIVE_INFINITY;
+    const tariffFresh = Number.isFinite(tariffAgeMs) && tariffAgeMs <= 3 * 60 * 60 * 1000;
     const planActive = ents.plan_active ? isOn(this._hass, ents.plan_active) : null;
     const chargePower = ents.charge_power ? parseFloat(stateVal(this._hass, ents.charge_power)) : NaN;
     const soc = ents.vehicle_soc ? parseFloat(stateVal(this._hass, ents.vehicle_soc)) : NaN;
-    const smartActive = smartLimit !== null && !isNaN(tariffValue) && tariffValue <= smartLimit;
+    const connected = ents.connected ? isOn(this._hass, ents.connected) : null;
+    const enabled = ents.enabled ? isOn(this._hass, ents.enabled) : null;
+    const pvPower = site?.pv_power ? parseFloat(stateVal(this._hass, site.pv_power)) : NaN;
+    const gridPower = site?.grid_power ? parseFloat(stateVal(this._hass, site.grid_power)) : NaN;
+    const pvSurplus = !isNaN(gridPower) && gridPower < -0.3;
+    const smartActive = useLimit && smartLimit !== null && !isNaN(tariffValue) && tariffFresh && tariffValue <= smartLimit;
     const missingInputs = [];
-    if (smartLimit === null) missingInputs.push("smartRecoLimit");
-    if (isNaN(tariffValue)) missingInputs.push("smartRecoTariff");
+    if (useLimit && smartLimit === null) missingInputs.push("smartRecoLimit");
+    if (useLimit && isNaN(tariffValue)) missingInputs.push("smartRecoTariff");
+    if (useLimit && isCo2 && !isNaN(tariffValue) && !tariffFresh) missingInputs.push("smartRecoTariffStale");
     if (isNaN(chargePower)) missingInputs.push("smartRecoPower");
     if (isNaN(soc)) missingInputs.push("smartRecoSoc");
     if (planActive === null) missingInputs.push("smartRecoPlan");
+    if (connected === null) missingInputs.push("smartRecoConnected");
+    if (enabled === null) missingInputs.push("smartRecoEnabled");
     const hasInputs = missingInputs.length === 0;
 
     let key = "";
     let reason = "";
     if (hasInputs) {
-      if (smartActive || charging || chargePower > 0.1) {
+      if (!connected && pvSurplus) {
+        key = "smartRecoConnectCar";
+        reason = "smartRecoReasonConnectCar";
+      } else if (connected && !enabled && pvSurplus) {
+        key = "smartRecoStartCharging";
+        reason = "smartRecoReasonStartCharging";
+      } else if (smartActive || charging || chargePower > 0.1 || (!useLimit && pvSurplus)) {
         key = "smartRecoNowPv";
         reason = "smartRecoReasonNow";
       } else if (planActive) {
@@ -1260,15 +1280,18 @@ class EvccCard extends HTMLElement {
       reason = "smartRecoNoData";
     }
 
-    return { key, reason, hasInputs, missingInputs, smartLimit, smartUnit, isCo2, tariffValue, planActive, chargePower, soc, smartActive };
+    return {
+      key, reason, hasInputs, missingInputs, smartLimit, smartUnit, isCo2, tariffValue, planActive, chargePower, soc, smartActive,
+      connected, enabled, pvPower, gridPower, useLimit,
+    };
   }
 
-  _renderRecommendationsMode(visible, allLoadpoints) {
+  _renderRecommendationsMode(visible, allLoadpoints, site) {
     if (Object.keys(visible).length === 0) return this._renderEmpty(allLoadpoints);
 
     const cards = Object.entries(visible).map(([lpName, ents]) => {
       const charging = ents.charging ? isOn(this._hass, ents.charging) : false;
-      const rec = this._getSmartRecommendation(ents, charging);
+      const rec = this._getSmartRecommendation(ents, site, charging);
       const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
       const modeLabel = ents.mode ? (stateVal(this._hass, ents.mode) || "—") : "—";
       const socText = !isNaN(rec.soc) ? `${Math.round(rec.soc)} %` : "—";
@@ -1301,6 +1324,8 @@ class EvccCard extends HTMLElement {
             <span>${this._t("smartRecoSoc")}: ${socText}</span>
             <span>${this._t("smartRecoPower")}: ${powerText}</span>
             <span>${this._t("smartRecoPlan")}: ${planLabel}</span>
+            <span>${this._t("smartRecoConnected")}: ${rec.connected === null ? "—" : (rec.connected ? this._t("smartRecoYes") : this._t("smartRecoNo"))}</span>
+            <span>${this._t("smartRecoEnabled")}: ${rec.enabled === null ? "—" : (rec.enabled ? this._t("smartRecoYes") : this._t("smartRecoNo"))}</span>
             <span>${this._t("smartRecoLimit")}: ${limitText}</span>
             <span>${this._t("smartRecoTariff")}: ${tariffText}</span>
           </div>
@@ -3640,6 +3665,7 @@ class EvccCardEditor extends HTMLElement {
     const showChargeCurrent = ["loadpoint", "compact"].includes(mode);
     const showSiteDetails   = ["site", "flow"].includes(mode);
     const showStatsPeriod   = ["stats", "site", "flow", "grid"].includes(mode);
+    const showRecoLimitRule = mode === "recommendations";
 
     const titlePlaceholder = {
       loadpoint: this._t("editorTitlePlaceholderLoadpoint"),
@@ -3748,6 +3774,15 @@ class EvccCardEditor extends HTMLElement {
           ], c.stats_period || "total")}
         </div>
         ` : ""}
+        ${showRecoLimitRule ? `
+        <div class="field">
+          <label class="field-label" for="recommendations_use_limit">${this._t("editorRecommendationsUseLimitLabel")}</label>
+          ${this._sel("recommendations_use_limit", [
+            ["true", this._t("editorRecommendationsUseLimitOn")],
+            ["false", this._t("editorRecommendationsUseLimitOff")],
+          ], c.recommendations_use_limit === false ? "false" : "true")}
+        </div>
+        ` : ""}
       </div>
     `;
 
@@ -3755,11 +3790,14 @@ class EvccCardEditor extends HTMLElement {
   }
 
   _addListeners() {
-    ["mode", "language", "site_details", "charge_current_settings", "stats_period"].forEach(id => {
+    ["mode", "language", "site_details", "charge_current_settings", "stats_period", "recommendations_use_limit"].forEach(id => {
       const el = this.shadowRoot.getElementById(id);
       if (!el) return;
       el.addEventListener("change", () => {
-        this._config = { ...this._config, [id]: el.value || undefined };
+        const value = id === "recommendations_use_limit"
+          ? (el.value === "true")
+          : (el.value || undefined);
+        this._config = { ...this._config, [id]: value };
         this._fire();
         if (id === "mode") this._render();
       });
