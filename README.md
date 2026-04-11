@@ -157,6 +157,7 @@ Add the card to any Lovelace dashboard and use the **visual editor** to configur
 | `site_details` | `string` | `expanded` | `collapsed` to hide the IN/OUT detail table by default in `site` and `flow` mode |
 | `charge_current_settings` | `string` | `collapsed` | `expanded` to show charge settings expanded by default |
 | `stats_period` | `string` | `total` | Default statistics period: `total`, `30d`, `365d`, `thisYear`, `none` |
+| `recommendations_use_limit` | `boolean` | `true` | In `recommendations` mode, include the smart charging limit (`smart_cost_limit`) in recommendation logic. Set to `false` to focus on live state (PV surplus, connected vehicle, charging enabled) even without a configured limit. |
 | `prefix` | `string` | *(auto)* | **YAML only** — Entity prefix, auto-detected from ha-evcc. Only needed for multiple EVCC instances with custom prefixes. |
 
 > **YAML Configurator:** For users who prefer YAML configuration, the interactive **[YAML Configurator](https://mkshb.github.io/hass-evcc-card/configurator.html)** is still available to generate card configurations for special cases.

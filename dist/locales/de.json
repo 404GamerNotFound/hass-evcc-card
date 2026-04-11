@@ -161,5 +161,17 @@
   "smartRecoTariff": "Tarif",
   "editorModeRecommendations": "Empfehlungen (recommendations)",
   "editorTitlePlaceholderRecommendations": "Standard: Smart-Empfehlungen",
-  "smartRecoAllGood": "💡 Alles richtig – du machst alles richtig!"
+  "smartRecoAllGood": "💡 Alles richtig – du machst alles richtig!",
+  "smartRecoConnectCar": "💡 Empfehlung: Auto jetzt anschließen",
+  "smartRecoReasonConnectCar": "PV-Überschuss ist verfügbar, aber kein Auto ist angeschlossen.",
+  "smartRecoStartCharging": "💡 Empfehlung: Laden jetzt starten",
+  "smartRecoReasonStartCharging": "Auto ist angeschlossen und PV-Überschuss ist verfügbar, aber Laden ist deaktiviert.",
+  "smartRecoTariffStale": "CO2-Daten veraltet",
+  "smartRecoConnected": "Angeschlossen",
+  "smartRecoEnabled": "Laden aktiviert",
+  "smartRecoYes": "Ja",
+  "smartRecoNo": "Nein",
+  "editorRecommendationsUseLimitLabel": "Smart-Limit für Empfehlungen verwenden",
+  "editorRecommendationsUseLimitOn": "Aktiviert",
+  "editorRecommendationsUseLimitOff": "Deaktiviert"
 }
