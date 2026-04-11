@@ -145,5 +145,20 @@
   "editorLanguageNameHr": "Kroatisch",
   "editorLanguageNameNl": "Nederlands",
   "editorLanguageNamePl": "Pools",
-  "editorLanguageNamePt": "Portugees"
+  "editorLanguageNamePt": "Portugees",
+  "smartRecoNowPv": "💡 Smart recommendation: charge now with PV",
+  "smartRecoLater": "💡 Smart recommendation: charge later",
+  "smartRecoReasonNow": "Tariff is below the limit or charging is already running.",
+  "smartRecoReasonLater": "Charge plan is active, but tariff is currently above the limit.",
+  "smartRecoNoData": "💡 Recommendation unavailable (missing inputs)",
+  "smartRecoNoRule": "💡 No active recommendation",
+  "smartRecoSoc": "SoC",
+  "smartRecoPower": "Power",
+  "smartRecoPlan": "Plan",
+  "smartRecoPlanOn": "Active",
+  "smartRecoPlanOff": "Inactive",
+  "smartRecoLimit": "Limit",
+  "smartRecoTariff": "Tariff",
+  "editorModeRecommendations": "Recommendations (recommendations)",
+  "editorTitlePlaceholderRecommendations": "Default: Smart recommendations"
 }

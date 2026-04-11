@@ -524,6 +524,8 @@ class EvccCard extends HTMLElement {
               ? this._renderStatsBlock()
               : this._config.mode === "plan"
                 ? this._renderPlanMode(visible)
+                : this._config.mode === "recommendations"
+                  ? this._renderRecommendationsMode(visible, loadpoints)
                 : this._config.mode === "compact"
                   ? (Object.keys(visible).length === 0
                       ? this._renderEmpty(loadpoints)
@@ -712,15 +714,12 @@ class EvccCard extends HTMLElement {
     const fillBg  = soc !== null ? socFillGradient(soc, minSoc ?? 0, limit ?? 100) : "var(--evcc-blue)";
     const trackBg = socTrackBg(minSoc ?? 0, limit ?? 100);
 
-    const _rawLimit  = ents.smart_cost_limit ? parseFloat(stateVal(this._hass, ents.smart_cost_limit)) : NaN;
-    const smartLimit = ents.smart_cost_limit && !isNaN(_rawLimit) ? _rawLimit : null;
-    const smartUnit  = smartLimit !== null
-      ? (attr(this._hass, ents.smart_cost_limit, "unit_of_measurement") ?? "") : "";
-    const isCo2Chip  = smartUnit === "g/kWh";
-    const prefix     = this._getPrefix();
-    const tariffId   = isCo2Chip ? `sensor.${prefix}tariff_co2` : `sensor.${prefix}tariff_grid`;
-    const tariffVal  = parseFloat(this._hass.states[tariffId]?.state ?? "NaN");
-    const smartActive = smartLimit !== null && !isNaN(tariffVal) && tariffVal <= smartLimit;
+    const smartReco = this._getSmartRecommendation(ents, charging);
+    const smartLimit = smartReco.smartLimit;
+    const smartUnit = smartReco.smartUnit;
+    const isCo2Chip = smartReco.isCo2;
+    const smartActive = smartReco.smartActive;
+    const smartRecommendation = smartReco.key ? this._t(smartReco.key) : "";
     const leafIcon   = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>`;
     const euroIcon   = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M15,18.5C12.49,18.5 10.32,17.08 9.24,15H15V13H8.58C8.53,12.67 8.5,12.34 8.5,12C8.5,11.66 8.53,11.33 8.58,11H15V9H9.24C10.32,6.92 12.5,5.5 15,5.5C16.61,5.5 18.09,6.09 19.23,7.07L21,5.3C19.41,3.87 17.3,3 15,3C11.08,3 7.76,5.51 6.52,9H3V11H6.06C6.02,11.33 6,11.66 6,12C6,12.34 6.02,12.67 6.06,13H3V15H6.52C7.76,18.49 11.08,21 15,21C17.31,21 19.41,20.13 21,18.7L19.22,16.93C18.09,17.91 16.61,18.5 15,18.5Z"/></svg>`;
     const smartChip  = smartLimit !== null ? `
@@ -746,6 +745,7 @@ class EvccCard extends HTMLElement {
           ${limit  !== null ? `<div class="soc-limit-marker" style="left:${Math.min(limit,100)}%"></div>`  : ""}
         </div>` : ""}
         ${smartChip ? `<div class="smart-cost-row">${smartChip}</div>` : ""}
+        ${smartRecommendation ? `<div class="smart-recommendation">${smartRecommendation}</div>` : ""}
       </div>
     `;
   }
@@ -1219,6 +1219,87 @@ class EvccCard extends HTMLElement {
           ${sessionHtml}
         </div>`;
     }).join("");
+  }
+
+  _getSmartRecommendation(ents, charging = false) {
+    const rawLimit = ents.smart_cost_limit ? parseFloat(stateVal(this._hass, ents.smart_cost_limit)) : NaN;
+    const smartLimit = ents.smart_cost_limit && !isNaN(rawLimit) ? rawLimit : null;
+    const smartUnit = smartLimit !== null
+      ? (attr(this._hass, ents.smart_cost_limit, "unit_of_measurement") ?? "")
+      : "";
+    const isCo2 = smartUnit === "g/kWh";
+    const prefix = this._getPrefix();
+    const tariffId = isCo2 ? `sensor.${prefix}tariff_co2` : `sensor.${prefix}tariff_grid`;
+    const tariffValue = parseFloat(this._hass.states[tariffId]?.state ?? "NaN");
+    const planActive = ents.plan_active ? isOn(this._hass, ents.plan_active) : null;
+    const chargePower = ents.charge_power ? parseFloat(stateVal(this._hass, ents.charge_power)) : NaN;
+    const soc = ents.vehicle_soc ? parseFloat(stateVal(this._hass, ents.vehicle_soc)) : NaN;
+    const smartActive = smartLimit !== null && !isNaN(tariffValue) && tariffValue <= smartLimit;
+    const hasInputs = smartLimit !== null && !isNaN(tariffValue) && !isNaN(chargePower) && !isNaN(soc) && planActive !== null;
+
+    let key = "";
+    let reason = "";
+    if (hasInputs) {
+      if (smartActive || charging || chargePower > 0.1) {
+        key = "smartRecoNowPv";
+        reason = "smartRecoReasonNow";
+      } else if (planActive) {
+        key = "smartRecoLater";
+        reason = "smartRecoReasonLater";
+      } else {
+        reason = "smartRecoNoRule";
+      }
+    } else {
+      reason = "smartRecoNoData";
+    }
+
+    return { key, reason, hasInputs, smartLimit, smartUnit, isCo2, tariffValue, planActive, chargePower, soc, smartActive };
+  }
+
+  _renderRecommendationsMode(visible, allLoadpoints) {
+    if (Object.keys(visible).length === 0) return this._renderEmpty(allLoadpoints);
+
+    const cards = Object.entries(visible).map(([lpName, ents]) => {
+      const charging = ents.charging ? isOn(this._hass, ents.charging) : false;
+      const rec = this._getSmartRecommendation(ents, charging);
+      const lpTitle = this._hass?.states[ents.mode]?.attributes?.loadpoint_title ?? lpName;
+      const modeLabel = ents.mode ? (stateVal(this._hass, ents.mode) || "—") : "—";
+      const socText = !isNaN(rec.soc) ? `${Math.round(rec.soc)} %` : "—";
+      const powerText = !isNaN(rec.chargePower)
+        ? `${rec.chargePower.toFixed(1)} ${unitStr(this._hass, ents.charge_power) || "kW"}`
+        : "—";
+      const limitText = rec.smartLimit !== null
+        ? `${rec.smartLimit} ${rec.isCo2 ? "g" : rec.smartUnit}`
+        : "—";
+      const tariffText = !isNaN(rec.tariffValue)
+        ? `${rec.tariffValue} ${rec.isCo2 ? "g" : rec.smartUnit}`
+        : "—";
+      const planLabel = rec.planActive === null
+        ? "—"
+        : (rec.planActive ? this._t("smartRecoPlanOn") : this._t("smartRecoPlanOff"));
+      const recommendationText = rec.key ? this._t(rec.key) : this._t(rec.reason);
+      const reasonText = this._t(rec.reason);
+
+      return `
+        <div class="smart-reco-card">
+          <div class="smart-reco-head">
+            <span class="smart-reco-title">${lpTitle}</span>
+            <span class="smart-reco-mode">${modeLabel}</span>
+          </div>
+          <div class="smart-reco-main">${recommendationText}</div>
+          <div class="smart-reco-reason">${reasonText}</div>
+          <div class="smart-reco-grid">
+            <span>${this._t("smartRecoSoc")}: ${socText}</span>
+            <span>${this._t("smartRecoPower")}: ${powerText}</span>
+            <span>${this._t("smartRecoPlan")}: ${planLabel}</span>
+            <span>${this._t("smartRecoLimit")}: ${limitText}</span>
+            <span>${this._t("smartRecoTariff")}: ${tariffText}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `<div class="smart-reco-list">${cards}</div>`;
   }
 
   _renderSiteBlock(site, loadpoints = {}) {
@@ -3136,6 +3217,15 @@ class EvccCard extends HTMLElement {
       .smart-cost-chip:hover { color: var(--primary-color); }
       .smart-cost-chip.active { color: var(--evcc-green); }
       .smart-cost-chip.active:hover { color: var(--evcc-green); filter: brightness(1.2); }
+      .smart-recommendation { margin-top: 4px; font-size: .74rem; color: var(--secondary-text-color); text-align: right; }
+      .smart-reco-list { display: grid; gap: 10px; }
+      .smart-reco-card { border: 1px solid var(--divider-color, #e5e7eb); border-radius: 8px; padding: 10px; }
+      .smart-reco-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; align-items: center; }
+      .smart-reco-title { font-weight: 600; font-size: .92rem; }
+      .smart-reco-mode { color: var(--secondary-text-color); font-size: .76rem; text-transform: uppercase; }
+      .smart-reco-main { font-size: .88rem; font-weight: 600; margin-bottom: 4px; }
+      .smart-reco-reason { font-size: .76rem; color: var(--secondary-text-color); margin-bottom: 6px; }
+      .smart-reco-grid { display: grid; gap: 2px; color: var(--secondary-text-color); font-size: .74rem; }
       .settings-divider { border: none; border-top: 1px solid var(--divider-color, #e5e7eb); margin: 8px 0; }
       @keyframes smart-cost-pulse { 0%,100% { background: transparent; } 40% { background: color-mix(in srgb, var(--primary-color) 15%, transparent); } }
       .smart-cost-highlight { border-radius: 6px; animation: smart-cost-pulse 1.5s ease; }
@@ -3536,7 +3626,7 @@ class EvccCardEditor extends HTMLElement {
     const selLps = Array.isArray(c.loadpoints) ? c.loadpoints : [];
     const noPlan  = Array.isArray(c.no_plan)   ? c.no_plan   : [];
 
-    const showLoadpoints    = ["loadpoint", "compact", "plan"].includes(mode);
+    const showLoadpoints    = ["loadpoint", "compact", "plan", "recommendations"].includes(mode);
     const showNoPlan        = ["loadpoint", "compact"].includes(mode);
     const showChargeCurrent = ["loadpoint", "compact"].includes(mode);
     const showSiteDetails   = ["site", "flow"].includes(mode);
@@ -3551,6 +3641,7 @@ class EvccCardEditor extends HTMLElement {
       grid:      this._t("editorTitlePlaceholderGrid"),
       stats:     this._t("editorTitlePlaceholderStats"),
       battery:   this._t("editorTitlePlaceholderBattery"),
+      recommendations: this._t("editorTitlePlaceholderRecommendations"),
     }[mode] || this._t("editorTitlePlaceholderLoadpoint");
 
     this.shadowRoot.innerHTML = `
@@ -3584,6 +3675,7 @@ class EvccCardEditor extends HTMLElement {
             ["battery",   this._t("editorModeBattery")],
             ["stats",     this._t("editorModeStats")],
             ["plan",      this._t("editorModePlan")],
+            ["recommendations", this._t("editorModeRecommendations")],
           ], mode)}
         </div>
         <div class="field">
