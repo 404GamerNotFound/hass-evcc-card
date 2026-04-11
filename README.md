@@ -330,6 +330,8 @@ Dedicated smart recommendation view with one card per loadpoint:
 
 This view is intended as a focused decision panel for users who want to monitor charging strategy at a glance.
 
+> **Mode not visible in the editor?** After updating the card, fully reload the browser (or clear browser cache) so Home Assistant loads the latest `evcc-card.js`.
+
 ---
 
 ## Entity detection
