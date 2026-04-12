@@ -3732,8 +3732,8 @@ class EvccCardEditor extends HTMLElement {
             ["grid",      this._t("editorModeGrid")],
             ["battery",   this._t("editorModeBattery")],
             ["stats",     this._t("editorModeStats")],
-            ["plan",      this._t("editorModePlan")],
             ["recommendations", this._t("editorModeRecommendations")],
+            ["plan",      this._t("editorModePlan")],
           ], mode)}
         </div>
         <div class="field">
@@ -3822,6 +3822,13 @@ class EvccCardEditor extends HTMLElement {
   }
 
   _addListeners() {
+    const modeSelect = this.shadowRoot.getElementById("mode");
+    if (modeSelect && !Array.from(modeSelect.options).some(opt => opt.value === "recommendations")) {
+      // Ensure recommendations mode is always available in the editor, even if an older DOM state is reused.
+      modeSelect.insertAdjacentHTML("beforeend", `<option value="recommendations">${this._t("editorModeRecommendations")}</option>`);
+      if ((this._config?.mode || "loadpoint") === "recommendations") modeSelect.value = "recommendations";
+    }
+
     ["mode", "language", "site_details", "charge_current_settings", "stats_period", "recommendations_use_limit", "recommendations_show_parameters"].forEach(id => {
       const el = this.shadowRoot.getElementById(id);
       if (!el) return;
