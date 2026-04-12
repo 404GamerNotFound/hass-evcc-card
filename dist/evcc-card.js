@@ -1238,10 +1238,13 @@ class EvccCard extends HTMLElement {
       : Number.POSITIVE_INFINITY;
     const tariffFresh = Number.isFinite(tariffAgeMs) && tariffAgeMs <= 3 * 60 * 60 * 1000;
     const planActive = ents.plan_active ? isOn(this._hass, ents.plan_active) : null;
+    const modeRaw = ents.mode ? stateVal(this._hass, ents.mode) : "";
+    const chargeMode = typeof modeRaw === "string" ? modeRaw.toLowerCase() : "";
     const chargePower = ents.charge_power ? parseFloat(stateVal(this._hass, ents.charge_power)) : NaN;
     const soc = ents.vehicle_soc ? parseFloat(stateVal(this._hass, ents.vehicle_soc)) : NaN;
     const connected = ents.connected ? isOn(this._hass, ents.connected) : null;
     const enabled = ents.enabled ? isOn(this._hass, ents.enabled) : null;
+    const smartCostActive = ents.smart_cost_active ? isOn(this._hass, ents.smart_cost_active) : null;
     const pvPower = site?.pv_power ? parseFloat(stateVal(this._hass, site.pv_power)) : NaN;
     const gridPower = site?.grid_power ? parseFloat(stateVal(this._hass, site.grid_power)) : NaN;
     const pvSurplus = !isNaN(gridPower) && gridPower < -0.3;
@@ -1253,6 +1256,7 @@ class EvccCard extends HTMLElement {
     if (isNaN(chargePower)) missingInputs.push("smartRecoPower");
     if (isNaN(soc)) missingInputs.push("smartRecoSoc");
     if (planActive === null) missingInputs.push("smartRecoPlan");
+    if (!chargeMode) missingInputs.push("smartRecoMode");
     if (connected === null) missingInputs.push("smartRecoConnected");
     if (enabled === null) missingInputs.push("smartRecoEnabled");
     const hasInputs = missingInputs.length === 0;
@@ -1266,6 +1270,15 @@ class EvccCard extends HTMLElement {
       } else if (connected && !enabled && pvSurplus) {
         key = "smartRecoStartCharging";
         reason = "smartRecoReasonStartCharging";
+      } else if (connected && chargeMode === "off" && soc < 90) {
+        key = "smartRecoSetMode";
+        reason = "smartRecoReasonSetMode";
+      } else if (connected && soc <= 20 && !planActive && chargePower <= 0.1) {
+        key = "smartRecoCreatePlan";
+        reason = "smartRecoReasonCreatePlan";
+      } else if (connected && soc >= 95 && planActive && chargePower <= 0.1) {
+        key = "smartRecoReviewPlan";
+        reason = "smartRecoReasonReviewPlan";
       } else if (smartActive || charging || chargePower > 0.1 || (!useLimit && pvSurplus)) {
         key = "smartRecoNowPv";
         reason = "smartRecoReasonNow";
@@ -1282,12 +1295,13 @@ class EvccCard extends HTMLElement {
 
     return {
       key, reason, hasInputs, missingInputs, smartLimit, smartUnit, isCo2, tariffValue, planActive, chargePower, soc, smartActive,
-      connected, enabled, pvPower, gridPower, useLimit,
+      connected, enabled, pvPower, gridPower, useLimit, chargeMode, smartCostActive,
     };
   }
 
   _renderRecommendationsMode(visible, allLoadpoints, site) {
     if (Object.keys(visible).length === 0) return this._renderEmpty(allLoadpoints);
+    const showParameters = this._config.recommendations_show_parameters !== false;
 
     const cards = Object.entries(visible).map(([lpName, ents]) => {
       const charging = ents.charging ? isOn(this._hass, ents.charging) : false;
@@ -1307,6 +1321,10 @@ class EvccCard extends HTMLElement {
       const planLabel = rec.planActive === null
         ? "—"
         : (rec.planActive ? this._t("smartRecoPlanOn") : this._t("smartRecoPlanOff"));
+      const modeLabelText = rec.chargeMode ? rec.chargeMode : "—";
+      const smartCostText = rec.smartCostActive === null
+        ? "—"
+        : (rec.smartCostActive ? this._t("smartRecoYes") : this._t("smartRecoNo"));
       const recommendationText = rec.key ? this._t(rec.key) : this._t(rec.reason);
       const reasonText = rec.reason === "smartRecoNoData" && rec.missingInputs.length > 0
         ? `${this._t(rec.reason)}: ${rec.missingInputs.map((entry) => this._t(entry)).join(", ")}`
@@ -1320,15 +1338,19 @@ class EvccCard extends HTMLElement {
           </div>
           <div class="smart-reco-main">${recommendationText}</div>
           <div class="smart-reco-reason">${reasonText}</div>
+          ${showParameters ? `
           <div class="smart-reco-grid">
             <span>${this._t("smartRecoSoc")}: ${socText}</span>
             <span>${this._t("smartRecoPower")}: ${powerText}</span>
+            <span>${this._t("smartRecoMode")}: ${modeLabelText}</span>
             <span>${this._t("smartRecoPlan")}: ${planLabel}</span>
             <span>${this._t("smartRecoConnected")}: ${rec.connected === null ? "—" : (rec.connected ? this._t("smartRecoYes") : this._t("smartRecoNo"))}</span>
             <span>${this._t("smartRecoEnabled")}: ${rec.enabled === null ? "—" : (rec.enabled ? this._t("smartRecoYes") : this._t("smartRecoNo"))}</span>
+            <span>${this._t("smartRecoSmartActive")}: ${smartCostText}</span>
             <span>${this._t("smartRecoLimit")}: ${limitText}</span>
             <span>${this._t("smartRecoTariff")}: ${tariffText}</span>
           </div>
+          ` : ""}
         </div>
       `;
     }).join("");
@@ -3666,6 +3688,7 @@ class EvccCardEditor extends HTMLElement {
     const showSiteDetails   = ["site", "flow"].includes(mode);
     const showStatsPeriod   = ["stats", "site", "flow", "grid"].includes(mode);
     const showRecoLimitRule = mode === "recommendations";
+    const showRecoParameters = mode === "recommendations";
 
     const titlePlaceholder = {
       loadpoint: this._t("editorTitlePlaceholderLoadpoint"),
@@ -3783,6 +3806,15 @@ class EvccCardEditor extends HTMLElement {
           ], c.recommendations_use_limit === false ? "false" : "true")}
         </div>
         ` : ""}
+        ${showRecoParameters ? `
+        <div class="field">
+          <label class="field-label" for="recommendations_show_parameters">${this._t("editorRecommendationsShowParametersLabel")}</label>
+          ${this._sel("recommendations_show_parameters", [
+            ["true", this._t("editorRecommendationsShowParametersOn")],
+            ["false", this._t("editorRecommendationsShowParametersOff")],
+          ], c.recommendations_show_parameters === false ? "false" : "true")}
+        </div>
+        ` : ""}
       </div>
     `;
 
@@ -3790,11 +3822,11 @@ class EvccCardEditor extends HTMLElement {
   }
 
   _addListeners() {
-    ["mode", "language", "site_details", "charge_current_settings", "stats_period", "recommendations_use_limit"].forEach(id => {
+    ["mode", "language", "site_details", "charge_current_settings", "stats_period", "recommendations_use_limit", "recommendations_show_parameters"].forEach(id => {
       const el = this.shadowRoot.getElementById(id);
       if (!el) return;
       el.addEventListener("change", () => {
-        const value = id === "recommendations_use_limit"
+        const value = ["recommendations_use_limit", "recommendations_show_parameters"].includes(id)
           ? (el.value === "true")
           : (el.value || undefined);
         this._config = { ...this._config, [id]: value };

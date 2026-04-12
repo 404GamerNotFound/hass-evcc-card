@@ -158,6 +158,7 @@ Add the card to any Lovelace dashboard and use the **visual editor** to configur
 | `charge_current_settings` | `string` | `collapsed` | `expanded` to show charge settings expanded by default |
 | `stats_period` | `string` | `total` | Default statistics period: `total`, `30d`, `365d`, `thisYear`, `none` |
 | `recommendations_use_limit` | `boolean` | `true` | In `recommendations` mode, include the smart charging limit (`smart_cost_limit`) in recommendation logic. Set to `false` to focus on live state (PV surplus, connected vehicle, charging enabled) even without a configured limit. |
+| `recommendations_show_parameters` | `boolean` | `true` | In `recommendations` mode, show/hide the parameter grid under each recommendation card (SoC, power, plan state, limit, tariff, etc.). |
 | `prefix` | `string` | *(auto)* | **YAML only** — Entity prefix, auto-detected from ha-evcc. Only needed for multiple EVCC instances with custom prefixes. |
 
 > **YAML Configurator:** For users who prefer YAML configuration, the interactive **[YAML Configurator](https://mkshb.github.io/hass-evcc-card/configurator.html)** is still available to generate card configurations for special cases.
@@ -326,8 +327,9 @@ Dedicated smart recommendation view with one card per loadpoint:
 
 - Recommendation headline (for example: "charge now with PV" or "charge later")
 - Reason line that explains why the recommendation is shown
-- Additional context values: current mode, SoC, charging power, plan state, smart limit, and current tariff
+- Optional parameter grid (toggleable): current mode, SoC, charging power, plan state, smart flags, smart limit, and current tariff
 - Fallback states when recommendation inputs are missing or no active recommendation rule matches
+- Additional EVCC-based recommendation rules (for example: suggest enabling a charging mode when the car is connected but mode is `off`, suggest creating a plan at very low SoC, or suggest reviewing a plan when SoC is already high)
 
 This view is intended as a focused decision panel for users who want to monitor charging strategy at a glance.
 
