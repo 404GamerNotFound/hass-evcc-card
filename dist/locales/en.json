@@ -173,5 +173,16 @@
   "smartRecoNo": "No",
   "editorRecommendationsUseLimitLabel": "Use smart charging limit in recommendations",
   "editorRecommendationsUseLimitOn": "Enabled",
-  "editorRecommendationsUseLimitOff": "Disabled"
+  "editorRecommendationsUseLimitOff": "Disabled",
+  "editorRecommendationsShowParametersLabel": "Show recommendation parameters",
+  "editorRecommendationsShowParametersOn": "Show",
+  "editorRecommendationsShowParametersOff": "Hide",
+  "smartRecoMode": "Mode",
+  "smartRecoSmartActive": "Smart active",
+  "smartRecoSetMode": "💡 Recommendation: enable a charging mode",
+  "smartRecoReasonSetMode": "Vehicle is connected, but charging mode is set to Off.",
+  "smartRecoCreatePlan": "💡 Recommendation: create a charge plan",
+  "smartRecoReasonCreatePlan": "Low SoC detected and no active charge plan is set.",
+  "smartRecoReviewPlan": "💡 Recommendation: review charge plan",
+  "smartRecoReasonReviewPlan": "SoC is already high; check whether the charge plan is still needed."
 }

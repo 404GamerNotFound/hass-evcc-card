@@ -173,5 +173,16 @@
   "smartRecoNo": "Nein",
   "editorRecommendationsUseLimitLabel": "Smart-Limit für Empfehlungen verwenden",
   "editorRecommendationsUseLimitOn": "Aktiviert",
-  "editorRecommendationsUseLimitOff": "Deaktiviert"
+  "editorRecommendationsUseLimitOff": "Deaktiviert",
+  "editorRecommendationsShowParametersLabel": "Empfehlungs-Parameter anzeigen",
+  "editorRecommendationsShowParametersOn": "Einblenden",
+  "editorRecommendationsShowParametersOff": "Ausblenden",
+  "smartRecoMode": "Modus",
+  "smartRecoSmartActive": "Smart aktiv",
+  "smartRecoSetMode": "💡 Empfehlung: Lade-Modus aktivieren",
+  "smartRecoReasonSetMode": "Auto ist verbunden, aber Modus ist auf Aus.",
+  "smartRecoCreatePlan": "💡 Empfehlung: Ladeplan anlegen",
+  "smartRecoReasonCreatePlan": "Niedriger SoC erkannt und aktuell kein Ladeplan aktiv.",
+  "smartRecoReviewPlan": "💡 Empfehlung: Ladeplan prüfen",
+  "smartRecoReasonReviewPlan": "SoC ist bereits hoch, prüfe ob der Ladeplan noch nötig ist."
 }
