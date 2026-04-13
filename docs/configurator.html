@@ -516,6 +516,22 @@
         </div>
       </div>
 
+      <!-- recommendations -->
+      <div class="mode-tile" id="tile-recommendations">
+        <div class="mode-header" onclick="toggleMode('recommendations')">
+          <input type="checkbox" class="mode-checkbox" id="card-recommendations" onchange="onModeChange('recommendations')">
+          <span class="mode-icon">💡</span>
+          <span class="mode-name" data-i18n="modeRecommendations">Recommendations</span>
+          <span class="mode-desc">recommendations</span>
+        </div>
+        <div class="mode-options hidden" id="opts-recommendations">
+          <div class="field">
+            <label data-i18n="cardTitle">Card title</label>
+            <input type="text" id="re-title" data-i18n-ph="cardTitlePlaceholder" placeholder="EVCC" oninput="render()">
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -569,6 +585,7 @@
       modeStats: "Statistik",
       modeBattery: "Hausbatterie",
       modePlan: "Ladeplanung",
+      modeRecommendations: "Empfehlungen",
       optCollapsedDefault: "eingeklappt (Standard)",
       optExpanded: "ausgeklappt",
       optExpandedDefault: "ausgeklappt (Standard)",
@@ -612,6 +629,7 @@
       modeStats: "Statistics",
       modeBattery: "Battery",
       modePlan: "Charge Plan",
+      modeRecommendations: "Recommendations",
       optCollapsedDefault: "collapsed (default)",
       optExpanded: "expanded",
       optExpandedDefault: "expanded (default)",
@@ -655,6 +673,7 @@
       modeStats: "Estadísticas",
       modeBattery: "Batería doméstica",
       modePlan: "Plan de carga",
+      modeRecommendations: "Recomendaciones",
       optCollapsedDefault: "contraído (por defecto)",
       optExpanded: "expandido",
       optExpandedDefault: "expandido (por defecto)",
@@ -698,6 +717,7 @@
       modeStats: "Statistiques",
       modeBattery: "Batterie domestique",
       modePlan: "Planification de charge",
+      modeRecommendations: "Recommandations",
       optCollapsedDefault: "réduit (par défaut)",
       optExpanded: "déplié",
       optExpandedDefault: "déplié (par défaut)",
@@ -741,6 +761,7 @@
       modeStats: "Statistike",
       modeBattery: "Kućna baterija",
       modePlan: "Plan punjenja",
+      modeRecommendations: "Preporuke",
       optCollapsedDefault: "sažeto (zadano)",
       optExpanded: "prošireno",
       optExpandedDefault: "prošireno (zadano)",
@@ -784,6 +805,7 @@
       modeStats: "Statistieken",
       modeBattery: "Thuisbatterij",
       modePlan: "Laadplanning",
+      modeRecommendations: "Aanbevelingen",
       optCollapsedDefault: "ingeklapt (standaard)",
       optExpanded: "uitgeklapt",
       optExpandedDefault: "uitgeklapt (standaard)",
@@ -827,6 +849,7 @@
       modeStats: "Statystyki",
       modeBattery: "Bateria domowa",
       modePlan: "Plan ładowania",
+      modeRecommendations: "Rekomendacje",
       optCollapsedDefault: "zwinięte (domyślnie)",
       optExpanded: "rozwinięte",
       optExpandedDefault: "rozwinięte (domyślnie)",
@@ -870,6 +893,7 @@
       modeStats: "Estatísticas",
       modeBattery: "Bateria doméstica",
       modePlan: "Plano de carga",
+      modeRecommendations: "Recomendações",
       optCollapsedDefault: "recolhido (padrão)",
       optExpanded: "expandido",
       optExpandedDefault: "expandido (padrão)",
@@ -929,7 +953,7 @@
   }
 
   /* ── Mode toggling ────────────────────────────────────────────────── */
-  const MODES = ['loadpoint','compact','site','grid','stats','battery','plan'];
+  const MODES = ['loadpoint','compact','site','grid','stats','battery','plan','recommendations'];
 
   function toggleMode(mode) {
     const cb = document.getElementById(`card-${mode}`);
@@ -969,6 +993,7 @@
       stats:     `📈 ${t('modeStats')}`,
       battery:   `🏠 ${t('modeBattery')}`,
       plan:      `📋 ${t('modePlan')}`,
+      recommendations: `💡 ${t('modeRecommendations')}`,
     };
 
     lines.push({ type: 'comment', val: modeLabels[mode] });
@@ -1003,7 +1028,7 @@
       if (lps.length) lines.push({ type: 'list', key: 'loadpoints', val: lps });
     }
 
-    const pfxMap = { loadpoint: 'lp', compact: 'co', site: 'si', grid: 'gr', stats: 'st', battery: 'ba', plan: 'pl' };
+    const pfxMap = { loadpoint: 'lp', compact: 'co', site: 'si', grid: 'gr', stats: 'st', battery: 'ba', plan: 'pl', recommendations: 're' };
     const title = val(`${pfxMap[mode]}-title`);
     if (title) lines.push({ type: 'kv', key: 'title', val: title });
 
